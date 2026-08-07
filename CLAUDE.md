@@ -28,6 +28,10 @@ outdoor/
 ├── CLAUDE.md               # 本文件
 ├── 00-赛季总览.md           # 赛季节奏、地点库、安全红线、计划索引
 ├── 00-冬季模式计划.md       # 12–2 月：活动库、每周建议、冬季装备与安全
+├── docs/                    # 规范类文档（见 docs/README.md 的组织规则）
+│   ├── prd/                 # 产品需求文档 PRD-xxx（改需求先改文档再动代码）
+│   ├── adr/                 # 架构决策记录 ADR-xxx（重大选型才新增，追加式）
+│   └── tech/                # 技术文档（数据契约/模块机制/操作手册，随代码同改）
 ├── plans/                  # 每周计划（文件名：2026-MM-DD_活动名.md）
 │   ├── 周计划模板.md        # 新一周从模板复制
 │   ├── 备用/               # 已去过/暂缓的计划归档，改期可复用
@@ -36,6 +40,29 @@ outdoor/
     ├── 装备总览.md          # 装备台账（✅已有/🛒待购/🕐待确认）
     └── 采购清单.md          # 分批次采购单（按优先级）
 ```
+
+## 网站（site/）
+
+- 纯静态、零依赖、离线可用；双击 `site/index.html` 即可打开。
+- **数据驱动**：所有计划数据在 `site/js/data/data-a|b|c|d.js`，每条含主题（theme）、行程、装备、安全、徒步路线关键点（waypoints）。
+- **新增一周计划时**：① `plans/` 生成 Markdown 源文档；② 往 `site/js/data/` 追加一条数据；③ 更新 `00-赛季总览.md` 索引。
+- 插图（`scenes.js`）与路线图（`maps.js`）为程序生成的 SVG：插图按 theme 组合卡通场景，行程时刻由 `actIconSVG` 按文字关键词自动配活动小图；自驾路线图基于真实地理（含 OSM 路网背景），为**指路参考**（非导航用途），页面已注明。
+- 装备勾选状态存浏览器 localStorage（`gear:<planId>:<idx>`）。
+- 冒烟测试：`node tools/smoke-test.js`（mock DOM 验证首页/详情页/地图/图标匹配）。
+
+## 路线流水线（tools/route-pipeline/）
+
+- 作用：把计划变成**真实地理**路线图（高德 API：地理编码 → 驾车/步行规划 → 道路/地标提取 → `site/js/data/routes.js`），另从 OSM 抓主要路网 → `site/js/data/network.js`。
+- 配置：`config.json`（仅 amapKey，gitignore）；**家位置/城市读仓库根 `config/profile.json`（用户配置，gitignore）**；运行 `node pipeline.js [planId]`（`--network` 只刷路网）。
+- 计划数据中的地理字段：`drive.landmarks`（沿途地标）、`drive.geoCity`（外地目的地限定城市，防同名 POI）、徒步 waypoints 的 `query`（可地理编码的锚点）/`at`（沿路径比例 0–1）/`act`（活动事项标注）。
+- 注意：高德个人开发者 QPS 低，amap.js 已内置限速重试；新增计划后重跑 pipeline 即可（有缓存，增量快）。Overpass 必须 POST + 自定义 UA，否则 406。
+- 无路线数据的计划自动回退卡通示意图。
+
+## 用户配置（config/profile.json）
+
+- **唯一真实来源**：家位置、出行成员、孩子信息（小名/出生年份/耐力/兴趣/过敏）、出行偏好；gitignore，模板为 `config/profile.example.json`。
+- **改配置后**：跑 `node tools/sync-profile.js` 生成网站用的 `site/js/data/profile.js`；改了家位置还要重跑 pipeline。
+- 代码与计划数据**不得写死**画像信息（计划数据起点统一写「家」）；页面年龄由出生年份自动计算。字段契约见 `docs/tech/数据契约.md`。
 
 ## 用户画像（2026-08-07 确认）
 

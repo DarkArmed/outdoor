@@ -1,0 +1,23 @@
+{
+  "home": {
+    "name": "家的大致位置（街道/地铁站级，如「××地铁站」）",
+    "city": "北京"
+  },
+  "family": {
+    "travelers": ["爸爸", "儿子"]
+  },
+  "child": {
+    "name": "孩子小名",
+    "birthYear": 2020,
+    "enduranceKm": [3, 5],
+    "interests": ["玩水"],
+    "character": "",
+    "allergies": []
+  },
+  "prefs": {
+    "maxDriveHoursOneWay": 3,
+    "availableDays": ["周六", "周日"],
+    "activityTypes": ["徒步", "露营"],
+    "foodNotes": ""
+  }
+}
