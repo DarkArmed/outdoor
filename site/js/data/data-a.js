@@ -3,6 +3,8 @@ var PLANS = [];
 
 PLANS.push({
   id: '2026-09-05',
+  badge: { icon: '🌊', name: '踩水小能手' },
+  tasks: ['在浅滩找到 3 块形状不同的石头', '看到一条小鱼或一只蜻蜓', '光脚踩水数出 10 朵水花'],
   mom: true,
   title: '白河湾戏水入门',
   date: '9/5（周六）',
@@ -44,6 +46,8 @@ PLANS.push({
 
 PLANS.push({
   id: '2026-09-12',
+  badge: { icon: '🥾', name: '山野小行者' },
+  tasks: ['找到 3 种不同的叶子', '在溪边发现一只小动物（虫子也算）', '找到一块像某种东西的石头，说出它像什么'],
   title: '神堂峪徒步',
   date: '9/12（周六）',
   type: 'B 山野徒步',
@@ -87,6 +91,8 @@ PLANS.push({
 
 PLANS.push({
   id: '2026-09-19',
+  badge: { icon: '🔭', name: '星空守望者' },
+  tasks: ['用望远镜看到月亮上的环形山', '找到北斗七星', '说出今晚的月亮是什么形状'],
   title: '华海田园观星露营',
   date: '9/19–9/20',
   type: 'C 露营过夜',
@@ -189,6 +195,8 @@ PLANS.push({
 
 PLANS.push({
   id: '2026-09-26',
+  badge: { icon: '🚲', name: '追风小骑士' },
+  tasks: ['骑行中发现 3 种不同的树', '听到 2 种鸟叫', '先看到 5 只麻雀就算赢'],
   mom: true,
   title: '东小口骑行机动日',
   date: '9/26（周六）',
@@ -288,3 +296,12 @@ PLANS.push({
   },
   review: ['搭营/住宿顺利吗？睡袋表现？', '孩子最喜欢的环节？', '长途车程孩子晕车吗？', '下次改进？'],
 });
+
+/* ---------- 里程碑徽章（PRD-002 §2.2）：规则写死，不做规则引擎 ----------
+   rule 三种：{firstType:'C'} 首个打卡的该周型计划 / {count:N} 累计打卡 N 次 / {minKm:N} 打卡计划的 drive.km ≥ N */
+var MILESTONES = [
+  { id: 'first-camp',  icon: '🏕️', name: '第一次露营', rule: { firstType: 'C' } },
+  { id: 'five-done',   icon: '⭐', name: '冒险五级',   rule: { count: 5 } },
+  { id: 'winter-brave',icon: '❄️', name: '冬季勇士',   rule: { firstType: 'E' } },
+  { id: 'long-haul',   icon: '🚗', name: '远征小英雄', rule: { minKm: 90 } },
+];

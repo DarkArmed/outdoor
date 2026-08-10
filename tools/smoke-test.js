@@ -14,7 +14,14 @@ function makeEl(id) {
     innerHTML: '',
     textContent: '',
     style: {},
-    classList: { add() {}, remove() {}, toggle() {} },
+    _cls: new Set(),
+    classList: {
+      add: c => el._cls.add(c),
+      remove: c => el._cls.delete(c),
+      toggle: (c, f) => (f === undefined ? (el._cls.has(c) ? el._cls.delete(c) : el._cls.add(c)) : (f ? el._cls.add(c) : el._cls.delete(c))),
+      contains: c => el._cls.has(c),
+    },
+    setAttribute() {}, getAttribute() { return null; },
     querySelector(sel) {
       const child = makeEl(`${id}>${sel}`);
       child.insertAdjacentHTML = (pos, html) => { el.innerHTML += html; }; // 插回父元素，模拟真实 DOM
@@ -37,8 +44,10 @@ function makeCtx(search) {
     IntersectionObserver: class { constructor(cb) {} observe() {} unobserve() {} },
     document: {
       title: '',
+      body: makeEl('body'),
       getElementById: id => (els[id] = els[id] || makeEl(id)),
       querySelectorAll: () => [],
+      addEventListener() {},
     },
   };
   ctx.window = ctx;
@@ -79,6 +88,30 @@ console.log('首页 renderHome:');
   check('7 个计划标记妈妈同行（含 1 个备用）', ctx.PLANS.filter(p => p.mom).length === 7);
   check('妈妈同行徽标出现在卡片（6 个活跃计划）', (rows.match(/badge-mom/g) || []).length === 6);
   check('妈妈同行卡片插图含妈妈（momShirt）', rows.includes('#FF8FAB'));
+  /* PRD-002：徽章墙 / 统计条 / 足迹 */
+  const wall = els['badge-wall'].innerHTML;
+  check('徽章墙渲染 20 格（16 活动 + 4 里程碑）', (wall.match(/badge-cell/g) || []).length === 20);
+  check('未解锁徽章显示灰色剪影（？？？）', wall.includes('？？？') && !wall.includes('unlocked'));
+  check('统计条初始为零', els['stats-bar'].textContent.includes('已冒险 0 次'));
+  const fp = els['footprint-map'].innerHTML;
+  check('足迹地图渲染（含家与目的地标记）', fp.includes('svg') && fp.includes('🏠') && fp.includes('📍'));
+  check('足迹地图去重+备用标注（16 标记：17 计划 −1 合并 +1 备用坝上）', (fp.match(/📍/g) || []).length === 16 && fp.includes('（备用）'));
+  /* PRD-002 修订：成就面板入抽屉 */
+  const drawer = ctx.document.getElementById('achieve-drawer');
+  const backdrop = ctx.document.getElementById('achieve-backdrop');
+  check('默认抽屉关闭（无 open 类）', !drawer.classList.contains('open'));
+  ctx.openAchieve('badges');
+  check('openAchieve 打开抽屉 + 锁滚动', drawer.classList.contains('open') && backdrop.classList.contains('open') && ctx.document.body.classList.contains('no-scroll'));
+  ctx.closeAchieve();
+  check('closeAchieve 关闭抽屉 + 解锁滚动', !drawer.classList.contains('open') && !ctx.document.body.classList.contains('no-scroll'));
+}
+
+/* ---------- ①c 成就面板 ?panel= 自动打开 ---------- */
+console.log('成就面板入口（?panel=badges）:');
+{
+  const { ctx, els } = makeCtx('?panel=badges');
+  for (const f of [...SCRIPTS, 'js/app.js']) load(ctx, f);
+  check('?panel=badges 打开抽屉', ctx.document.getElementById('achieve-drawer').classList.contains('open'));
 }
 
 /* ---------- ①b 妈妈同行详情页 ---------- */
@@ -104,6 +137,10 @@ console.log('详情页 renderPlan（2026-09-05）:');
   const rail = els['detail-rail'].innerHTML;
   check('详情页周时间轴有缩略图', rail.includes('tl-thumb'));
   check('当前周高亮', rail.includes('tl-week current'));
+  /* PRD-002：任务卡 + 打卡按钮 */
+  check('任务卡片区渲染（3 条任务）', (html.match(/task-item/g) || []).length === 3);
+  check('打卡按钮存在（长按提示）', html.includes('checkin-btn') && html.includes('长按 2 秒'));
+  check('胶囊导航含任务入口', html.includes('#sec-tasks'));
 }
 
 /* ---------- ③ 地图 ---------- */
