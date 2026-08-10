@@ -11,6 +11,10 @@
   <div id="hero-scene"></div>
   <h1 id="hero-title">🏕️ 元宝的户外大冒险</h1>
   <p class="subtitle" id="hero-subtitle">爸爸 + 小勇士 · 北京出发 · 每周末一次</p>
+  <nav class="hero-links">
+    <button class="hero-link" data-tab="badges">🏅 徽章</button>
+    <button class="hero-link" data-tab="footprint">🗺️ 足迹</button>
+  </nav>
 </header>
 
 <main>
@@ -38,6 +42,29 @@
     </div>
   </div>
 </main>
+
+<!-- 成就面板：右侧侧滑抽屉（徽章墙 / 足迹大地图），主页只留 Hero 入口 -->
+<div id="achieve-backdrop" class="drawer-backdrop" aria-hidden="true"></div>
+<aside id="achieve-drawer" class="drawer" aria-label="成就面板" aria-hidden="true">
+  <div class="drawer-head">
+    <h2>🎖️ 成就面板</h2>
+    <button id="achieve-close" class="drawer-close" aria-label="关闭">✕</button>
+  </div>
+  <nav class="drawer-tabs">
+    <button class="drawer-tab active" data-tab="badges">🏅 徽章</button>
+    <button class="drawer-tab" data-tab="footprint">🗺️ 足迹</button>
+  </nav>
+  <div class="drawer-body">
+    <section class="drawer-panel" data-panel="badges">
+      <div id="badge-wall" class="badge-wall"></div>
+      <p id="stats-bar" class="stats-bar"></p>
+    </section>
+    <section class="drawer-panel" data-panel="footprint" hidden>
+      <h3>🗺️ 我们的足迹</h3>
+      <div id="footprint-map" class="footprint-map"></div>
+    </section>
+  </div>
+</aside>
 
 <footer>
   <p>🌲 路线图是示意图，导航请用两步路/高德 · 本地离线网站，数据存在浏览器里</p>

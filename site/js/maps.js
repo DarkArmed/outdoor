@@ -277,3 +277,44 @@ function hikeMapSVG(plan) {
   if (!plan.hike) return '';
   return schematicHikeMap(plan.hike);
 }
+
+/* ---------- 足迹大地图（PRD-002 §四）：全部目的地的真实坐标总览 ---------- */
+function footprintMapSVG(doneIds) {
+  if (typeof ROUTES === 'undefined' || typeof PLANS === 'undefined') return '';
+  const done = new Set(doneIds || []);
+  const pts = [];
+  let home = null;
+  for (const p of PLANS) {
+    const r = ROUTES[p.id];
+    if (!r || !r.drive || !r.drive.to || !r.drive.to.coord) continue;
+    if (!home && r.drive.from && r.drive.from.coord) home = r.drive.from.coord;
+    /* 同城多点去重（如多次白河湾）：坐标近似则合并，已打卡状态取或 */
+    const near = pts.find(q => Math.hypot(q.coord[0] - r.drive.to.coord[0], q.coord[1] - r.drive.to.coord[1]) < 0.01);
+    if (near) { near.done = near.done || done.has(p.id); continue; }
+    pts.push({ coord: r.drive.to.coord, name: p.location, title: p.title, date: p.date, done: done.has(p.id), archived: !!p.archived });
+  }
+  if (!pts.length || !home) return '';
+
+  const W = 800, H = 420, PAD = 56;
+  const all = [...pts.map(p => p.coord), home];
+  const proj = projectPoints(all, W, H, PAD);
+  const lons = all.map(c => c[0]), lats = all.map(c => c[1]);
+  const bounds = [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+
+  const [hx, hy] = proj(home);
+  const markers = pts.map(p => {
+    const [x, y] = proj(p.coord);
+    const tip = `${p.title}｜${p.date}${p.archived ? '（备用）' : ''}${p.done ? '｜已打卡 ✅' : ''}`;
+    return p.done
+      ? `<g><title>${tip}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="15" fill="#FFD93D" stroke="#E8A800" stroke-width="3"/><text x="${x.toFixed(1)}" y="${(y + 6).toFixed(1)}" text-anchor="middle" font-size="16">⭐</text></g>`
+      : `<g opacity="0.55"><title>${tip}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="12" fill="#C9CFD6" stroke="#9AA3AD" stroke-width="2.5"/><text x="${x.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle" font-size="13">📍</text></g>`;
+  }).join('');
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="足迹大地图">
+    <rect width="${W}" height="${H}" rx="18" fill="#EAF6FF"/>
+    <defs><clipPath id="netclip"><rect width="${W}" height="${H}" rx="18"/></clipPath></defs>
+    ${networkLayer(bounds, proj)}
+    <g><title>家</title><circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="17" fill="#fff" stroke="#5B8DEF" stroke-width="3.5"/><text x="${hx.toFixed(1)}" y="${(hy + 7).toFixed(1)}" text-anchor="middle" font-size="19">🏠</text></g>
+    ${markers}
+  </svg>`;
+}

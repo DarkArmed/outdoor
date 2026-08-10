@@ -405,3 +405,125 @@ footer {
   font-size: 0.9rem;
   background: var(--sky);
 }
+
+/* ---------- PRD-002：成长激励与足迹 ---------- */
+
+/* Hero 锚点快捷按钮 */
+.hero-links { margin-top: 12px; display: flex; gap: 12px; justify-content: center; }
+.hero-link {
+  display: inline-block; padding: 8px 20px; border-radius: 999px;
+  background: #fff; color: var(--ink, #2D3748); font-weight: 700; text-decoration: none;
+  border: none; cursor: pointer; font-size: 15px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.08); transition: transform 0.15s;
+}
+.hero-link:hover { transform: translateY(-2px); }
+
+/* 冒险徽章墙 */
+.badge-wall {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 12px; margin-top: 12px;
+}
+.badge-cell {
+  background: #fff; border-radius: 18px; padding: 14px 6px 10px;
+  text-align: center; box-shadow: 0 3px 0 rgba(0,0,0,0.06);
+}
+.badge-cell .badge-icon { font-size: 34px; filter: grayscale(1); opacity: 0.35; }
+.badge-cell .badge-name { font-size: 12px; margin-top: 6px; color: #9AA3AD; font-weight: 600; }
+.badge-cell.unlocked { background: #FFF7D6; box-shadow: 0 3px 0 #E8C547; }
+.badge-cell.unlocked .badge-icon { filter: none; opacity: 1; }
+.badge-cell.unlocked .badge-name { color: #8A6D00; }
+.badge-cell.milestone { border: 2px dashed #D9C46A; }
+.badge-cell.milestone.unlocked { border: 2px solid #E8A800; }
+
+/* 统计条 */
+.stats-bar {
+  margin-top: 12px; padding: 10px 18px; border-radius: 999px;
+  background: #E8F7EE; color: #1E6B3C; font-weight: 700; text-align: center;
+}
+
+/* 足迹大地图 */
+.footprint-map svg { width: 100%; height: auto; display: block; }
+
+/* 小勇士任务卡 */
+.task-list { display: grid; gap: 10px; }
+.task-item {
+  display: flex; align-items: center; gap: 10px;
+  background: #FFF3E8; border-radius: 14px; padding: 12px 16px; cursor: pointer;
+  font-weight: 600; transition: opacity 0.15s;
+}
+.task-item input { width: 20px; height: 20px; accent-color: #FF9F43; }
+.task-item.done { opacity: 0.55; text-decoration: line-through; }
+
+/* 打卡按钮（长按 2 秒） */
+.checkin-btn {
+  position: relative; overflow: hidden; width: 100%;
+  padding: 18px; border: none; border-radius: 18px; cursor: pointer;
+  background: #FF9F43; color: #fff; font-size: 18px; font-weight: 800;
+  box-shadow: 0 4px 0 #E07F1F; user-select: none; touch-action: none;
+}
+.checkin-btn:disabled { background: #7CDB6E; box-shadow: 0 4px 0 #4CAF50; cursor: default; }
+.checkin-progress {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: rgba(255,255,255,0.35); pointer-events: none;
+}
+.checkin-btn.holding .checkin-progress { width: 100%; transition: width 2s linear; }
+
+/* 解锁动画弹层 */
+.badge-modal {
+  position: fixed; inset: 0; z-index: 99;
+  background: rgba(43,58,103,0.55); display: flex; align-items: center; justify-content: center;
+}
+.badge-card {
+  position: relative; overflow: hidden; background: #fff; border-radius: 26px;
+  padding: 36px 48px; text-align: center; max-width: 420px;
+  animation: badge-pop 0.5s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.badge-card.full-star { border: 4px solid #FFD93D; box-shadow: 0 0 40px rgba(255,217,61,0.8); }
+.badge-big { font-size: 84px; animation: badge-spin 0.9s ease; }
+.badge-big-name { font-size: 22px; font-weight: 800; margin: 8px 0; }
+.badge-ms { color: #8A6D00; font-weight: 600; }
+.badge-actions { margin-top: 18px; display: flex; gap: 12px; justify-content: center; }
+.badge-link {
+  padding: 10px 18px; border-radius: 999px; background: #FFD93D; color: #5B4A00;
+  font-weight: 700; text-decoration: none;
+}
+.badge-close {
+  padding: 10px 18px; border-radius: 999px; border: none;
+  background: #E6E2DA; font-weight: 700; cursor: pointer;
+}
+.confetti { position: absolute; top: -8%; font-size: 22px; animation: confetti-fall 2.6s ease-in forwards; }
+@keyframes badge-pop { from { transform: scale(0.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes badge-spin { from { transform: rotate(-360deg) scale(0.4); } to { transform: rotate(0) scale(1); } }
+@keyframes confetti-fall { to { transform: translateY(460px) rotate(300deg); opacity: 0; } }
+
+/* 成就面板侧滑抽屉（PRD-002 摆位修订） */
+.drawer-backdrop {
+  position: fixed; inset: 0; z-index: 90; background: rgba(43,58,103,0.45);
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 91;
+  width: min(560px, 92vw); background: #F6FAFD; box-shadow: -6px 0 24px rgba(0,0,0,0.16);
+  transform: translateX(105%); transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.3, 1);
+  display: flex; flex-direction: column;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 2px solid #E6E2DA; background: #fff;
+}
+.drawer-head h2 { margin: 0; font-size: 20px; }
+.drawer-close {
+  border: none; background: #F1F3F5; width: 38px; height: 38px; border-radius: 50%;
+  font-size: 16px; cursor: pointer; color: #6B7280; box-shadow: 0 2px 0 rgba(0,0,0,0.08);
+}
+.drawer-tabs { display: flex; gap: 8px; padding: 12px 20px; background: #fff; border-bottom: 1px solid #EDEFF2; }
+.drawer-tab {
+  flex: 1; padding: 10px 0; border: none; border-radius: 999px; cursor: pointer;
+  background: #E8EDF2; color: #6B7280; font-weight: 700; font-size: 15px;
+}
+.drawer-tab.active { background: #5B8DEF; color: #fff; }
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px 28px; }
+.drawer-panel[hidden] { display: none; }
+.no-scroll { overflow: hidden; }

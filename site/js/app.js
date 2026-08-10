@@ -33,6 +33,25 @@ function heroSubtitle() {
   return `${who} + ${kid} · ${city}出发 · 每周末一次`;
 }
 
+/* ---------- 成长激励（PRD-002）：打卡记录 / 徽章解锁状态 ---------- */
+function getDone() {
+  try { return JSON.parse(localStorage.getItem('plans:done') || '[]'); } catch { return []; }
+}
+function getUnlocked() {
+  try { return JSON.parse(localStorage.getItem('badges:unlocked') || '[]'); } catch { return []; }
+}
+/* 里程碑按规则实时评估（显示的唯一依据；规则见 data-a.js MILESTONES） */
+function milestoneStates(doneIds) {
+  const donePlans = PLANS.filter(p => doneIds.includes(p.id));
+  return (typeof MILESTONES !== 'undefined' ? MILESTONES : []).map(m => {
+    let ok = false;
+    if (m.rule.firstType) ok = donePlans.some(p => p.type.startsWith(m.rule.firstType));
+    if (m.rule.count) ok = donePlans.length >= m.rule.count;
+    if (m.rule.minKm) ok = donePlans.some(p => (p.drive.km || 0) >= m.rule.minKm);
+    return { ...m, unlocked: ok };
+  });
+}
+
 /* ---------- 首页：左侧月份时间轴 + 按月分行 ---------- */
 function renderHome() {
   const heroEl = document.getElementById('hero-scene');
@@ -85,6 +104,73 @@ function renderHome() {
 
   const archEl = document.getElementById('archive-grid');
   archEl.innerHTML = archived.length ? archived.map(card).join('') : '<p class="muted">暂无</p>';
+
+  /* 成就面板（徽章墙 + 足迹地图）：数据填充进侧滑抽屉，主页只留 Hero 入口 */
+  renderAchievements();
+  wireAchieveDrawer();
+
+  const panel = new URLSearchParams(location.search).get('panel');
+  if (panel === 'badges' || panel === 'footprint') openAchieve(panel);
+}
+
+/* ---------- 成就面板（PRD-002）：徽章墙 / 统计条 / 足迹地图，装在右侧抽屉 ---------- */
+function renderAchievements() {
+  const doneIds = getDone();
+  const active = PLANS.filter(p => !p.archived);
+  const badgeEl = document.getElementById('badge-wall');
+  if (badgeEl) {
+    const cells = [
+      ...active.filter(p => p.badge).map(p => ({ icon: p.badge.icon, name: p.badge.name, unlocked: doneIds.includes(p.id), milestone: false })),
+      ...milestoneStates(doneIds).map(m => ({ icon: m.icon, name: m.name, unlocked: m.unlocked, milestone: true })),
+    ];
+    badgeEl.innerHTML = cells.map(b => `
+      <div class="badge-cell${b.unlocked ? ' unlocked' : ''}${b.milestone ? ' milestone' : ''}">
+        <div class="badge-icon">${b.icon}</div>
+        <div class="badge-name">${b.unlocked ? esc(b.name) : '？？？'}</div>
+      </div>`).join('');
+
+    const donePlans = active.filter(p => doneIds.includes(p.id));
+    const km = donePlans.reduce((s, p) => {
+      const m = p.hike && /([\d.]+)\s*km/.exec(p.hike.length || '');
+      return s + (m ? +m[1] : 0);
+    }, 0);
+    const camps = donePlans.filter(p => p.type.startsWith('C')).length;
+    const statsEl = document.getElementById('stats-bar');
+    if (statsEl) statsEl.textContent = `已冒险 ${doneIds.length} 次 · 徒步 ${Math.round(km * 10) / 10} km · 露营 ${camps} 晚`;
+  }
+  const fpEl = document.getElementById('footprint-map');
+  if (fpEl) fpEl.innerHTML = footprintMapSVG(doneIds);
+}
+
+function openAchieve(tab) {
+  const drawer = document.getElementById('achieve-drawer');
+  const backdrop = document.getElementById('achieve-backdrop');
+  if (!drawer) return;
+  if (tab) switchTab(tab);
+  drawer.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+  if (backdrop) backdrop.classList.add('open');
+  if (document.body) document.body.classList.add('no-scroll');
+}
+function closeAchieve() {
+  const drawer = document.getElementById('achieve-drawer');
+  const backdrop = document.getElementById('achieve-backdrop');
+  if (drawer) { drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true'); }
+  if (backdrop) backdrop.classList.remove('open');
+  if (document.body) document.body.classList.remove('no-scroll');
+}
+function switchTab(tab) {
+  document.querySelectorAll('.drawer-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.drawer-panel').forEach(p => { p.hidden = p.dataset.panel !== tab; });
+}
+function wireAchieveDrawer() {
+  document.querySelectorAll('.hero-link[data-tab]').forEach(btn => btn.addEventListener('click', () => openAchieve(btn.dataset.tab)));
+  const closeBtn = document.getElementById('achieve-close');
+  if (closeBtn) closeBtn.addEventListener('click', closeAchieve);
+  const backdrop = document.getElementById('achieve-backdrop');
+  if (backdrop) backdrop.addEventListener('click', closeAchieve);
+  document.querySelectorAll('.drawer-tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAchieve(); });
 }
 
 /* ---------- 详情页 ---------- */
@@ -175,6 +261,15 @@ function renderPlan() {
       ${p.tips && p.tips.length ? `<div class="tip-box"><strong>💡 爸爸的小抄：</strong><ul>${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : ''}
     </section>
 
+    ${p.tasks && p.tasks.length ? `
+    <section class="lazy" id="sec-tasks">
+      <h2>🗡️ 小勇士任务</h2>
+      <div class="task-list">
+        ${p.tasks.map((t, i) => `<div class="task-item" data-idx="${i}"><input type="checkbox" tabindex="-1"><label>${esc(t)}</label></div>`).join('')}
+      </div>
+      <p class="muted">全部完成 + 打卡，徽章升级为满星版 🌟</p>
+    </section>` : ''}
+
     <section class="lazy" id="sec-itinerary">
       <h2>🕐 行程安排</h2>
       ${itineraryHTML}
@@ -211,11 +306,21 @@ function renderPlan() {
         ${(p.review || []).map(r => `<li>${esc(r)}</li>`).join('')}
       </ul></div>
     </section>
+
+    ${p.badge ? `
+    <section class="lazy" id="sec-checkin">
+      <button id="checkin-btn" class="checkin-btn"${getDone().includes(p.id) ? ' disabled' : ''}>
+        ${getDone().includes(p.id) ? `✅ 已完成本次冒险 · ${p.badge.icon} ${esc(p.badge.name)}` : '🏁 完成本次冒险（长按 2 秒打卡）'}
+        <span class="checkin-progress"></span>
+      </button>
+    </section>` : ''}
   `;
 
   /* 区块导航：内容顶部胶囊横条 */
   const NAV = [
-    ['sec-goal', '🎯 目标'], ['sec-itinerary', '🕐 行程'], ['sec-maps', '🗺️ 路线'],
+    ['sec-goal', '🎯 目标'],
+    ...(p.tasks && p.tasks.length ? [['sec-tasks', '🗡️ 任务']] : []),
+    ['sec-itinerary', '🕐 行程'], ['sec-maps', '🗺️ 路线'],
     ['sec-gear', '🎒 装备'], ['sec-safety', '🛡️ 安全'], ['sec-review', '📝 回顾'],
   ];
   const snav = `<nav class="snav">${NAV.map(([id, label]) =>
@@ -234,7 +339,94 @@ function renderPlan() {
     </a>`).join('');
 
   loadGearState(p, root);
+  loadTaskState(p, root);
+  bindCheckin(p, root);
   setupLazy(root);
+}
+
+/* ---------- 小勇士任务：勾选存 localStorage ---------- */
+function taskKey(planId, idx) { return `tasks:${planId}:${idx}`; }
+
+function loadTaskState(plan, root) {
+  root.querySelectorAll('.task-item').forEach(el => {
+    const i = +el.dataset.idx;
+    const cb = el.querySelector('input');
+    const checked = localStorage.getItem(taskKey(plan.id, i)) === '1';
+    cb.checked = checked;
+    el.classList.toggle('done', checked);
+    el.addEventListener('click', e => {
+      if (e.target.tagName !== 'INPUT') cb.checked = !cb.checked;
+      el.classList.toggle('done', cb.checked);
+      localStorage.setItem(taskKey(plan.id, i), cb.checked ? '1' : '0');
+    });
+  });
+}
+
+/* ---------- 打卡：长按 2 秒，解锁徽章（PRD-002 §2.3） ---------- */
+function bindCheckin(plan, root) {
+  const btn = root.querySelector('#checkin-btn');
+  if (!btn || btn.disabled) return;
+  let timer = null;
+  const start = e => {
+    e.preventDefault();
+    btn.classList.add('holding');
+    timer = setTimeout(() => {
+      timer = null;
+      btn.classList.remove('holding');
+      doCheckin(plan, root);
+    }, 2000);
+  };
+  const cancel = () => {
+    if (timer) { clearTimeout(timer); timer = null; btn.classList.remove('holding'); }
+  };
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', cancel);
+  btn.addEventListener('pointerleave', cancel);
+}
+
+function doCheckin(plan, root) {
+  const doneIds = getDone();
+  if (!doneIds.includes(plan.id)) {
+    doneIds.push(plan.id);
+    localStorage.setItem('plans:done', JSON.stringify(doneIds));
+  }
+  const unlocked = getUnlocked();
+  if (!unlocked.includes(plan.id)) unlocked.push(plan.id);
+  const newMs = milestoneStates(doneIds).filter(m => m.unlocked && !unlocked.includes(m.id));
+  newMs.forEach(m => unlocked.push(m.id));
+  localStorage.setItem('badges:unlocked', JSON.stringify(unlocked));
+
+  const fullStar = !!(plan.tasks && plan.tasks.length &&
+    plan.tasks.every((_, i) => localStorage.getItem(taskKey(plan.id, i)) === '1'));
+
+  const btn = root.querySelector('#checkin-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `✅ 已完成本次冒险 · ${plan.badge.icon} ${esc(plan.badge.name)}`;
+  }
+  showBadgeUnlock(plan, newMs, fullStar);
+}
+
+/* 解锁动画：徽章弹出 + 撒花；满星版加金框 */
+function showBadgeUnlock(plan, newMs, fullStar) {
+  const overlay = document.createElement('div');
+  overlay.className = 'badge-modal';
+  const confetti = Array.from({ length: 24 }, (_, i) =>
+    `<span class="confetti" style="left:${(i * 37) % 100}%;animation-delay:${(i % 8) * 0.12}s">${['🎉', '✨', '🎊', '⭐'][i % 4]}</span>`).join('');
+  overlay.innerHTML = `
+    <div class="badge-card${fullStar ? ' full-star' : ''}">
+      ${confetti}
+      <div class="badge-big">${plan.badge.icon}</div>
+      <h2>${fullStar ? '🌟 满星通关！' : '🎉 解锁徽章！'}</h2>
+      <p class="badge-big-name">${plan.badge.icon} ${esc(plan.badge.name)}</p>
+      ${newMs.length ? `<p class="badge-ms">同时解锁里程碑：${newMs.map(m => `${m.icon} ${esc(m.name)}`).join('、')}</p>` : ''}
+      <div class="badge-actions">
+        <a class="badge-link" href="index.html?panel=badges">去看看徽章墙 →</a>
+        <button class="badge-close">继续看计划</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('.badge-close').addEventListener('click', () => overlay.remove());
 }
 
 /* ---------- 滚动懒加载 + 导航高亮 ---------- */
