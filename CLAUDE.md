@@ -78,3 +78,11 @@ outdoor/
 - **装备变更**：购入装备后同步更新 `equipment/装备总览.md`（状态改 ✅）和 `equipment/采购清单.md`（打勾）。
 - **活动结束后**：在当周计划「回顾」区补记实际情况，作为后续迭代的依据。
 - 后续可能升级为图文并茂的 HTML 版，文档结构需保持便于转换。
+
+## Git 工作流（master 保护）
+
+- **master 禁止直接 merge / rebase 任何分支**：除非用户明确要求，不得把任何分支 merge 或 rebase 到 master；feature 分支只能通过 **merge PR** 的方式合入 master。
+- **master 仅通过快进同步 origin/master**：正常流程下本地 master 只允许快进到 origin/master（如 `git pull --ff-only`），不允许本地合并提交、改写或 rebase master 历史。
+- **每个 feature 一个独立 worktree**：feature 分支自 master 拉出、命名对应 feature；禁止多个 feature 混用同一个 worktree/分支。
+- **feature close 后删除对应 worktree**：PR 合并/收尾完成后 `git worktree remove` 清理，不残留。
+- **开发分支直接提交并 push**：worktree 内的改动在 feature 分支上直接 commit（提交信息写清楚），push 到远端后开 PR，由 PR review 把关；不需要先等人工确认再提交。
