@@ -96,6 +96,7 @@ console.log('首页 renderHome:');
   const fp = els['footprint-map'].innerHTML;
   check('足迹地图渲染（含家与目的地标记）', fp.includes('svg') && fp.includes('🏠') && fp.includes('📍'));
   check('足迹地图去重+备用标注（16 标记：17 计划 −1 合并 +1 备用坝上）', (fp.match(/📍/g) || []).length === 16 && fp.includes('（备用）'));
+  check('足迹地图图例（PRD-003：已打卡/还没去/家）', fp.includes('已打卡') && fp.includes('还没去'));
   /* PRD-002 修订：成就面板入抽屉 */
   const drawer = ctx.document.getElementById('achieve-drawer');
   const backdrop = ctx.document.getElementById('achieve-backdrop');
@@ -151,7 +152,9 @@ console.log('地图渲染:');
   const plan = ctx.PLANS.find(p => p.id === '2026-09-05');
   const drive = ctx.driveMapSVG(plan);
   check('自驾图是真实地理（含路线折线）', drive.includes('95.2 公里'));
-  check('自驾图含路网背景层（2.3.5）', drive.includes('netclip') && drive.includes('#D9D2C5'));
+  check('自驾图含路网背景层（PRD-003 唯一 clip + 道路分级）', drive.includes('clip-path="url(#netclip-drv)"') && drive.includes('#F0B542'));
+  check('自驾图新视觉（纸色底 + 路线主色 + 软阴影）', drive.includes('#F4EFE4') && drive.includes('#E8590C') && drive.includes('feDropShadow'));
+  check('自驾图光晕文字排版（paint-order）', drive.includes('paint-order="stroke"'));
   check('起点标注为家', drive.includes('>家<') || drive.includes('家（'));
   const hike = ctx.hikeMapSVG(ctx.PLANS.find(p => p.id === '2026-09-05'));
   check('徒步图含活动标注', hike.includes('踩水') || hike.includes('打水仗') || hike.includes('搭天幕'));
