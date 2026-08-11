@@ -96,6 +96,27 @@ function mapBounds(all) {
   ];
 }
 
+/* ---------- 标签碰撞避免（PRD-003：修复元素互相覆盖） ---------- */
+function makeLabelPlacer() {
+  const placed = [];
+  return {
+    fit(x, y, w, h) {
+      for (const p of placed) {
+        if (Math.abs(p.x - x) < (p.w + w) / 2 + 6 && Math.abs(p.y - y) < (p.h + h) / 2 + 4) return false;
+      }
+      return true;
+    },
+    add(x, y, w, h) { placed.push({ x, y, w, h }); },
+  };
+}
+/* 在候选偏移里找不重叠的位置渲染；都重叠则跳过（返回 ''） */
+function placeLabel(placer, x, y, w, h, render) {
+  for (const dy of [0, 18, -18, 36, -36]) {
+    if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return render(dy); }
+  }
+  return '';
+}
+
 /* ---------- 路网背景：OSM 主要道路（network.js，GCJ-02），分级渲染
    simple=true 时单遍淡渲染（足迹大地图用，省一半体积） ---------- */
 function networkLayer(bounds, proj, id, simple) {
@@ -129,8 +150,8 @@ function networkLayer(bounds, proj, id, simple) {
 /* ---------- 统一标记：白色圆底 + 强调色环 + emoji + 光晕文字 ---------- */
 function pinMarker(x, y, emoji, ring, id) {
   return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" filter="url(#sh-${id})">
-    <circle r="15" fill="#FFFFFF" stroke="${ring}" stroke-width="3"/>
-    <text y="6" text-anchor="middle" font-size="15">${emoji}</text>
+    <circle r="13" fill="#FFFFFF" stroke="${ring}" stroke-width="2.5"/>
+    <text y="5" text-anchor="middle" font-size="13">${emoji}</text>
   </g>`;
 }
 
@@ -163,24 +184,33 @@ function realDriveMap(d, id) {
   const [sx, sy] = proj(d.from.coord);
   const [ex, ey] = proj(d.to.coord);
 
-  const roadLabels = (d.roads || []).filter(r => r.name && r.name.trim()).map(r => {
+  const placer = makeLabelPlacer();
+  /* 道路名称：小 pill + 碰撞避免（重叠自动下移/上移，仍重叠则跳过） */
+  let roadLabels = '';
+  for (const r of (d.roads || [])) {
+    if (!r.name || !r.name.trim()) continue;
     const [x, y] = proj(r.point);
-    const w = r.name.length * 13 + 16;
-    return `
-    <g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
-      <rect x="${(-w / 2).toFixed(1)}" y="-12.5" width="${w}" height="25" rx="12.5" fill="${MAP_C.pill}" opacity="0.92" stroke="${MAP_C.pillEdge}" stroke-width="1"/>
-      <text y="4.5" text-anchor="middle" font-size="12.5" font-weight="600" fill="${MAP_C.text}">${r.name}</text>
+    const w = r.name.length * 11 + 14, h = 22;
+    const tag = dy => `
+    <g transform="translate(${x.toFixed(1)},${(y + dy).toFixed(1)})">
+      <rect x="${(-w / 2).toFixed(1)}" y="-11" width="${w}" height="22" rx="11" fill="${MAP_C.pill}" opacity="0.92" stroke="${MAP_C.pillEdge}" stroke-width="1"/>
+      <text y="4" text-anchor="middle" font-size="11.5" font-weight="600" fill="${MAP_C.text}">${r.name}</text>
     </g>`;
-  }).join('');
+    roadLabels += placeLabel(placer, x, y, w, h, tag);
+  }
 
-  const landmarks = (d.landmarks || []).map(l => {
+  /* 沿途地标：统一 pin + 名称光晕文字（带碰撞避免） */
+  let landmarks = '';
+  (d.landmarks || []).forEach(l => {
     const [x, y] = proj(l.coord);
-    return `
+    const nameW = l.name.length * 12 * 0.55, nameH = 16;
+    const label = dy => haloText(0, 34 + dy, l.name, 12);
+    landmarks += `
     <g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
       ${pinMarker(0, 0, l.icon, MAP_C.accent, id)}
-      ${haloText(0, 34, l.name, 13.5)}
+      ${placeLabel(placer, 0, 34, nameW, nameH, label)}
     </g>`;
-  }).join('');
+  });
 
   return `
 <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="自驾路线图（真实地理）" style="font-family:system-ui,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
@@ -190,32 +220,32 @@ function realDriveMap(d, id) {
   ${graticule(W, H, proj, bounds)}
   <!-- 路网背景（OSM 主要道路，分级示意） -->
   ${networkLayer(bounds, proj, id)}
-  <!-- 真实路线：白描边 + 烧砖橙主路 -->
-  <path d="${route}" fill="none" stroke="#FFFFFF" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="${route}" fill="none" stroke="${MAP_C.route}" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 真实路线：白描边 + 烧砖橙主路（细线条，避免遮挡） -->
+  <path d="${route}" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="${route}" fill="none" stroke="${MAP_C.route}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
   <!-- 主要道路标注 -->
   ${roadLabels}
   <!-- 沿途地标 -->
   ${landmarks}
   <!-- 起点 -->
   <g transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})" filter="url(#sh-${id})">
-    <circle r="20" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="3.5"/>
-    <text y="7" text-anchor="middle" font-size="18">🏠</text>
-    ${haloText(0, 46, d.from.name, 16)}
+    <circle r="17" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="3"/>
+    <text y="6" text-anchor="middle" font-size="16">🏠</text>
+    ${haloText(0, 40, d.from.name, 14)}
   </g>
   <!-- 终点 -->
   <g transform="translate(${ex.toFixed(1)},${ey.toFixed(1)})" filter="url(#sh-${id})">
-    <circle r="20" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3.5"/>
-    <text y="7" text-anchor="middle" font-size="18">📍</text>
-    ${haloText(0, -38, d.to.name, 17)}
+    <circle r="17" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3"/>
+    <text y="6" text-anchor="middle" font-size="16">📍</text>
+    ${haloText(0, -32, d.to.name, 15)}
   </g>
-  <!-- 真实里程信息牌 -->
-  <g transform="translate(${W / 2},50)">
-    <rect x="-180" y="-26" width="360" height="48" rx="15" fill="#FFFFFF" opacity="0.95" stroke="${MAP_C.route}" stroke-width="2.5"/>
-    <text y="7" text-anchor="middle" font-size="19" font-weight="700" fill="${MAP_C.text}">🚗 ${d.distance} 公里 · 约 ${d.duration} 分钟</text>
+  <!-- 真实里程信息牌（缩小，避免盖住路线） -->
+  <g transform="translate(${W / 2},44)">
+    <rect x="-150" y="-22" width="300" height="42" rx="13" fill="#FFFFFF" opacity="0.94" stroke="${MAP_C.route}" stroke-width="2"/>
+    <text y="6" text-anchor="middle" font-size="16" font-weight="700" fill="${MAP_C.text}">🚗 ${d.distance} 公里 · 约 ${d.duration} 分钟</text>
   </g>
-  <!-- 指北针 -->
-  ${compass(W - 46, 84, id)}
+  <!-- 指北针（放左上角，终点常在上方区域，右上最挤） -->
+  ${compass(46, 84, id)}
 </svg>`;
 }
 
@@ -230,8 +260,8 @@ function realHikeMap(h, id) {
   let pathLayer;
   if (h.path && h.path.length >= 2) {
     pathLayer = `
-    <path d="${pathFrom(h.path, proj)}" fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${pathFrom(h.path, proj)}" fill="none" stroke="${MAP_C.trail}" stroke-width="4.5" stroke-dasharray="1 12" stroke-linecap="round"/>`;
+    <path d="${pathFrom(h.path, proj)}" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${pathFrom(h.path, proj)}" fill="none" stroke="${MAP_C.trail}" stroke-width="3.5" stroke-dasharray="1 12" stroke-linecap="round"/>`;
   } else {
     let dAttr = '';
     h.spots.forEach((s, i) => {
@@ -239,8 +269,8 @@ function realHikeMap(h, id) {
       dAttr += `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)} `;
     });
     pathLayer = `
-    <path d="${dAttr}" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
-    <path d="${dAttr}" fill="none" stroke="${MAP_C.trail}" stroke-width="4" stroke-dasharray="6 10" stroke-linecap="round" opacity="0.85"/>
+    <path d="${dAttr}" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+    <path d="${dAttr}" fill="none" stroke="${MAP_C.trail}" stroke-width="3" stroke-dasharray="6 10" stroke-linecap="round" opacity="0.85"/>
     <text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="13" fill="${MAP_C.sub}">虚线为点位示意连接（山野步道无地图数据）</text>`;
   }
 
@@ -254,13 +284,13 @@ function realHikeMap(h, id) {
     return `
     <g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
       <g filter="url(#sh-${id})">
-        <circle r="19" fill="${bg}" stroke="#FFFFFF" stroke-width="3"/>
-        <text y="7" text-anchor="middle" font-size="17">${icon}</text>
+        <circle r="16" fill="${bg}" stroke="#FFFFFF" stroke-width="3"/>
+        <text y="6" text-anchor="middle" font-size="15">${icon}</text>
       </g>
-      <circle cx="19" cy="-19" r="10" fill="${MAP_C.route}"/>
-      <text x="19" y="-14" text-anchor="middle" font-size="12" font-weight="700" fill="#FFFFFF">${i + 1}</text>
-      ${haloText(0, below ? 50 : -38, s.name, 15.5)}
-      ${s.act ? haloText(0, below ? 70 : -56, s.act, 13, MAP_C.route) : ''}
+      <circle cx="17" cy="-17" r="9" fill="${MAP_C.route}"/>
+      <text x="17" y="-12" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">${i + 1}</text>
+      ${haloText(0, below ? 46 : -34, s.name, 14)}
+      ${s.act ? haloText(0, below ? 64 : -50, s.act, 12, MAP_C.route) : ''}
     </g>`;
   }).join('');
 
@@ -273,7 +303,7 @@ function realHikeMap(h, id) {
   ${pathLayer}
   ${spots}
   ${infoCard(W / 2, 40, `🥾 ${h.title}${h.length ? ' · ' + h.length : ''}`, MAP_C.green, 420, id)}
-  ${compass(W - 46, 104, id)}
+  ${compass(46, 100, id)}
 </svg>`;
 }
 
@@ -287,17 +317,17 @@ function schematicDriveMap(drive) {
   <rect width="800" height="340" rx="20" fill="${MAP_C.paper}"/>
   <path d="M0 220 Q 120 140 240 200 T 480 190 T 800 170 V 340 H 0 Z" fill="#E3EAD6"/>
   <path d="M0 270 Q 160 210 340 260 T 800 240 V 340 H 0 Z" fill="#D5E0C6"/>
-  <path d="${path}" fill="none" stroke="#FFFFFF" stroke-width="14" stroke-linecap="round"/>
-  <path d="${path}" fill="none" stroke="${MAP_C.route}" stroke-width="7" stroke-linecap="round" stroke-dasharray="2 22"/>
+  <path d="${path}" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="${path}" fill="none" stroke="${MAP_C.route}" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="2 22"/>
   <g transform="translate(90,270)">
-    <circle r="22" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="3.5"/>
-    <text y="8" text-anchor="middle" font-size="20">🏠</text>
-    <text y="52" text-anchor="middle" font-size="16" font-weight="bold" fill="${MAP_C.text}">${drive.from || '家'}</text>
+    <circle r="18" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="3"/>
+    <text y="6" text-anchor="middle" font-size="17">🏠</text>
+    <text y="46" text-anchor="middle" font-size="15" font-weight="bold" fill="${MAP_C.text}">${drive.from || '家'}</text>
   </g>
   <g transform="translate(710,110)">
-    <circle r="22" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3.5"/>
-    <text y="8" text-anchor="middle" font-size="20">📍</text>
-    <text y="-38" text-anchor="middle" font-size="17" font-weight="bold" fill="${MAP_C.text}">${drive.to}</text>
+    <circle r="18" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3"/>
+    <text y="6" text-anchor="middle" font-size="17">📍</text>
+    <text y="-32" text-anchor="middle" font-size="16" font-weight="bold" fill="${MAP_C.text}">${drive.to}</text>
   </g>
   <g transform="translate(400,238) rotate(-8)">
     <rect x="-34" y="-16" width="68" height="18" rx="8" fill="${MAP_C.route}"/>
