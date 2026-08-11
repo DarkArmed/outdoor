@@ -96,6 +96,30 @@ function mapBounds(all) {
   ];
 }
 
+/* ---------- 自适应画布高度（PRD-003：消除大块空白） ----------
+   固定宽 W，按地理内容宽高比计算画布高：内容正好填满高度则无上下留白，
+   宽浅路线画布变矮、窄长路线画布变高。宽保持固定 → 线条粗细在所有图一致。 */
+function contentRatio(bounds) {
+  const [minLon, minLat, maxLon, maxLat] = bounds;
+  const kx = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
+  return Math.max((maxLon - minLon) * kx, 1e-6) / Math.max(maxLat - minLat, 1e-6);
+}
+function fitCanvasH(W, ratio, PAD, minH, maxH) {
+  const perfect = (W - PAD * 2) / ratio + PAD * 2; // 内容正好填满时所需高度
+  return Math.round(Math.max(minH, Math.min(perfect, maxH)));
+}
+/* 文本宽度估算：CJK≈size、emoji≈1.1×size、ASCII≈0.55×size（标签碰撞用） */
+function textWidth(txt, size) {
+  let w = 0;
+  for (const ch of txt) {
+    const c = ch.codePointAt(0);
+    if (c >= 0x2e80 && c < 0xa000) w += size;
+    else if (c >= 0x1f000) w += size * 1.1;
+    else w += size * 0.55;
+  }
+  return Math.max(w, size);
+}
+
 /* ---------- 标签碰撞避免（PRD-003：修复元素互相覆盖） ---------- */
 function makeLabelPlacer() {
   const placed = [];
@@ -111,12 +135,30 @@ function makeLabelPlacer() {
     add(x, y, w, h) { placed.push({ x, y, w, h }); },
   };
 }
-/* 在候选偏移里找不重叠的位置渲染；都重叠则跳过（返回 ''） */
-function placeLabel(placer, x, y, w, h, render) {
-  for (const dy of [0, 18, -18, 36, -36]) {
+/* 在候选偏移里找不重叠的位置渲染；都重叠则跳过（返回 ''）。cands 可自定义候选偏移 */
+function placeLabel(placer, x, y, w, h, render, cands) {
+  for (const dy of (cands || [0, 18, -18, 36, -36])) {
     if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return render(dy); }
   }
   return '';
+}
+/* 徒步点位名称/事项块放置：下/上/更下/更上四档候选，避开信息牌/指北针/其他点位；保底不丢名字 */
+function placeHikeBlock(placer, x, y, name, act, preferAbove) {
+  const nW = textWidth(name, 14), aW = act ? textWidth(act, 12) : 0;
+  const w = Math.max(nW, aW) + 4;
+  const mk = (dyN, dyA) => {
+    const top = dyN - 13, bot = dyA ? dyA + 3 : dyN + 4;
+    return { dyN, dyA, cy: (top + bot) / 2, h: bot - top };
+  };
+  const B = [mk(46, act ? 66 : null), mk(-34, act ? -52 : null), mk(70, act ? 90 : null), mk(-56, act ? -74 : null)];
+  const order = preferAbove ? [B[1], B[0], B[3], B[2]] : [B[0], B[1], B[2], B[3]];
+  for (const c of order) {
+    if (placer.fit(x, y + c.cy, w, c.h)) {
+      placer.add(x, y + c.cy, w, c.h);
+      return haloText(0, c.dyN, name, 14) + (c.dyA ? haloText(0, c.dyA, act, 12, MAP_C.route) : '');
+    }
+  }
+  return haloText(0, preferAbove ? -34 : 46, name, 14);
 }
 
 /* 把圆从矩形中推出（返回调整后的圆心）；用于地标 pin 避开起终点/信息牌/指北针 */
@@ -220,10 +262,11 @@ function infoCard(x, y, text, accent, w, id) {
 
 /* ---------- 真实地理：自驾路线图 ---------- */
 function realDriveMap(d, id) {
-  const W = 800, H = 460, PAD = 82;
+  const W = 800, PAD = 82;
   const all = [...d.polyline, d.from.coord, d.to.coord, ...(d.landmarks || []).map(l => l.coord)];
-  const proj = projectPoints(all, W, H, PAD);
   const bounds = mapBounds(all);
+  const H = fitCanvasH(W, contentRatio(bounds), PAD, 260, 520);
+  const proj = projectPoints(all, W, H, PAD);
   const route = pathFrom(d.polyline, proj);
   const [sx, sy] = proj(d.from.coord);
   const [ex, ey] = proj(d.to.coord);
@@ -235,7 +278,6 @@ function realDriveMap(d, id) {
   placer.obstacle(sx, sy, 34, 34);
   placer.obstacle(ex, ey, 34, 34);
   placer.obstacle(sx, sy + 40, 26, 16);
-  placer.obstacle(ex, ey - 32, 30, 16);
 
   /* 地标：pin 与起终点圆 / 信息牌 / 指北针重叠时整体推出；随后注册为障碍 */
   const lmks = (d.landmarks || []).map(l => ({ icon: l.icon, name: l.name, p: proj(l.coord) }));
@@ -251,6 +293,15 @@ function realDriveMap(d, id) {
     }
     l.p = [px, py];
     placer.obstacle(l.p[0], l.p[1], 26, 26);
+  }
+
+  /* 终点名：优先放 marker 下方（避开上方信息牌），在路网/地标标签之前放置，
+     让后续标签避让终点名；候选跨度更宽，避免被 pin/其他标签挤到保底压住元素 */
+  const endW = textWidth(d.to.name, 15), endH = 18;
+  let endLabelHtml = placeLabel(placer, ex, ey + 40, endW, endH, dy => haloText(0, 40 + dy, d.to.name, 15), [0, 18, -18, 36, -36, 54, -54, 72, -72]);
+  if (!endLabelHtml) { // 保底：注册默认位置并渲染，保证终点名不丢、后续标签避让
+    placer.add(ex, ey + 40, endW, endH);
+    endLabelHtml = haloText(0, 40, d.to.name, 15);
   }
 
   /* 道路名称：小 pill + 碰撞避免（避开 marker/info/其他标签，重叠自动挪位或跳过） */
@@ -270,7 +321,7 @@ function realDriveMap(d, id) {
   /* 沿途地标名称：光晕文字（绝对坐标碰撞；组内渲染保持相对偏移） */
   let landmarks = '';
   for (const l of lmks) {
-    const nameW = l.name.length * 12 * 0.55, nameH = 16;
+    const nameW = textWidth(l.name, 12), nameH = 16;
     landmarks += `
     <g transform="translate(${l.p[0].toFixed(1)},${l.p[1].toFixed(1)})">
       ${pinMarker(0, 0, l.icon, MAP_C.accent, id)}
@@ -303,7 +354,7 @@ function realDriveMap(d, id) {
   <g transform="translate(${ex.toFixed(1)},${ey.toFixed(1)})" filter="url(#sh-${id})">
     <circle r="17" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3"/>
     <text y="6" text-anchor="middle" font-size="16">📍</text>
-    ${haloText(0, -32, d.to.name, 15)}
+    ${endLabelHtml}
   </g>
   <!-- 真实里程信息牌（缩小，避免盖住路线） -->
   <g transform="translate(${W / 2},44)">
@@ -317,10 +368,11 @@ function realDriveMap(d, id) {
 
 /* ---------- 真实地理：徒步/活动路线图 ---------- */
 function realHikeMap(h, id) {
-  const W = 800, H = 420, PAD = 85;
+  const W = 800, PAD = 85;
   const coords = h.spots.map(s => s.coord).concat(h.path || []);
-  const proj = projectPoints(coords, W, H, PAD);
   const bounds = mapBounds(coords);
+  const H = fitCanvasH(W, contentRatio(bounds), PAD, 250, 520);
+  const proj = projectPoints(coords, W, H, PAD);
 
   /* 路径：真实步行折线（实线）或点位示意连线（虚线） */
   let pathLayer;
@@ -340,13 +392,19 @@ function realHikeMap(h, id) {
     <text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="13" fill="${MAP_C.sub}">虚线为点位示意连接（山野步道无地图数据）</text>`;
   }
 
-  /* 点位投影后做扩散，避免真实坐标几乎重合的点位圆叠圆 */
+  /* 点位投影后做扩散，避免真实坐标几乎重合的点位圆叠圆；随后注册为障碍供标签避让 */
   const spotPts = h.spots.map(s => proj(s.coord));
   spreadPoints(spotPts, 46, 12);
+  const placer = makeLabelPlacer();
+  placer.obstacle(W / 2, 40, 420, 44);       // 信息牌
+  placer.obstacle(46, 100, 40, 54);          // 指北针（含"北"）
+  if (!(h.path && h.path.length >= 2)) {
+    placer.obstacle(W / 2, H - 16, textWidth('虚线为点位示意连接（山野步道无地图数据）', 13), 20); // 底部说明
+  }
+  for (const [x, y] of spotPts) placer.obstacle(x, y, 46, 46); // 点位圆+编号徽章
   const spots = h.spots.map((s, i) => {
     const [x, y] = spotPts[i];
     const isStart = i === 0, isEnd = i === h.spots.length - 1;
-    const below = i % 2 === 0;
     const icon = s.icon || (isStart ? '🚩' : isEnd ? '🏁' : '⭐');
     const bg = isStart ? MAP_C.gold : isEnd ? MAP_C.green : '#FFFFFF';
     const ring = isStart ? MAP_C.goldDk : isEnd ? MAP_C.greenDk : MAP_C.accent;
@@ -358,8 +416,7 @@ function realHikeMap(h, id) {
       </g>
       <circle cx="17" cy="-17" r="9" fill="${MAP_C.route}"/>
       <text x="17" y="-12" text-anchor="middle" font-size="11" font-weight="700" fill="#FFFFFF">${i + 1}</text>
-      ${haloText(0, below ? 46 : -34, s.name, 14)}
-      ${s.act ? haloText(0, below ? 64 : -50, s.act, 12, MAP_C.route) : ''}
+      ${placeHikeBlock(placer, x, y, s.name, s.act || '', i % 2 !== 0)}
     </g>`;
   }).join('');
 
@@ -492,10 +549,11 @@ function footprintMapSVG(doneIds) {
   }
   if (!pts.length || !home) return '';
 
-  const W = 800, H = 420, PAD = 56;
+  const W = 800, PAD = 56;
   const all = [...pts.map(p => p.coord), home];
-  const proj = projectPoints(all, W, H, PAD);
   const bounds = mapBounds(all);
+  const H = fitCanvasH(W, contentRatio(bounds), PAD, 280, 560);
+  const proj = projectPoints(all, W, H, PAD);
 
   const [hx, hy] = proj(home);
   /* 目的地：把「家的锚点」作为固定点一起扩散，保证 marker 既彼此分开也不压住家 */
