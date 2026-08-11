@@ -100,6 +100,8 @@ function mapBounds(all) {
 function makeLabelPlacer() {
   const placed = [];
   return {
+    /* 固定障碍（画布绝对坐标）：信息牌/指北针/起终点圆/地标 pin */
+    obstacle(x, y, w, h) { placed.push({ x, y, w, h }); },
     fit(x, y, w, h) {
       for (const p of placed) {
         if (Math.abs(p.x - x) < (p.w + w) / 2 + 6 && Math.abs(p.y - y) < (p.h + h) / 2 + 4) return false;
@@ -115,6 +117,48 @@ function placeLabel(placer, x, y, w, h, render) {
     if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return render(dy); }
   }
   return '';
+}
+
+/* 把圆从矩形中推出（返回调整后的圆心）；用于地标 pin 避开起终点/信息牌/指北针 */
+function pushCircleFromRect(cx, cy, r, rx, ry, rw, rh, pad) {
+  const nx = Math.max(rx, Math.min(cx, rx + rw));
+  const ny = Math.max(ry, Math.min(cy, ry + rh));
+  const dx = cx - nx, dy = cy - ny;
+  const d = Math.sqrt(dx * dx + dy * dy);
+  if (d >= r + pad) return [cx, cy];
+  if (d < 0.5) { // 圆心落在矩形内：沿最近边推出
+    const l = cx - rx, rt = rx + rw - cx, t = cy - ry, b = ry + rh - cy;
+    const m = Math.min(l, rt, t, b);
+    if (m === l) return [rx - r - pad, cy];
+    if (m === rt) return [rx + rw + r + pad, cy];
+    if (m === t) return [cx, ry - r - pad];
+    return [cx, ry + rh + r + pad];
+  }
+  const push = r + pad - d;
+  return [cx + dx / d * push, cy + dy / d * push];
+}
+
+/* 点集扩散：迭代推开距离小于 minD 的点对（确定性），用于挤在一起的 marker/点位
+   fixed=Set 中的索引不移动（如家的锚点） */
+function spreadPoints(pts, minD, iters, fixed) {
+  fixed = fixed || new Set();
+  for (let k = 0; k < (iters || 10); k++) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        if (fixed.has(i) && fixed.has(j)) continue;
+        const dx = pts[i][0] - pts[j][0], dy = pts[i][1] - pts[j][1];
+        const d = Math.hypot(dx, dy);
+        if (d > 0 && d < minD) {
+          const push = (minD - d) / 2, ux = dx / d, uy = dy / d;
+          if (!fixed.has(i)) { pts[i][0] += ux * push; pts[i][1] += uy * push; }
+          if (!fixed.has(j)) { pts[j][0] -= ux * push; pts[j][1] -= uy * push; }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
 }
 
 /* ---------- 路网背景：OSM 主要道路（network.js，GCJ-02），分级渲染
@@ -185,7 +229,31 @@ function realDriveMap(d, id) {
   const [ex, ey] = proj(d.to.coord);
 
   const placer = makeLabelPlacer();
-  /* 道路名称：小 pill + 碰撞避免（重叠自动下移/上移，仍重叠则跳过） */
+  /* 固定障碍（绝对坐标）：信息牌 / 指北针 / 起终点圆 / 起终点名称 —— 标签需避开 */
+  placer.obstacle(W / 2, 44, 304, 46);
+  placer.obstacle(46, 84, 44, 58);
+  placer.obstacle(sx, sy, 34, 34);
+  placer.obstacle(ex, ey, 34, 34);
+  placer.obstacle(sx, sy + 40, 26, 16);
+  placer.obstacle(ex, ey - 32, 30, 16);
+
+  /* 地标：pin 与起终点圆 / 信息牌 / 指北针重叠时整体推出；随后注册为障碍 */
+  const lmks = (d.landmarks || []).map(l => ({ icon: l.icon, name: l.name, p: proj(l.coord) }));
+  for (const l of lmks) {
+    let [px, py] = l.p;
+    for (const rect of [
+      [sx - 17, sy - 17, 34, 34], // 起点圆
+      [ex - 17, ey - 17, 34, 34], // 终点圆
+      [W / 2 - 152, 21, 304, 46], // 信息牌
+      [46 - 22, 54, 44, 64],      // 指北针（左上角）
+    ]) {
+      [px, py] = pushCircleFromRect(px, py, 13, rect[0], rect[1], rect[2], rect[3], 4);
+    }
+    l.p = [px, py];
+    placer.obstacle(l.p[0], l.p[1], 26, 26);
+  }
+
+  /* 道路名称：小 pill + 碰撞避免（避开 marker/info/其他标签，重叠自动挪位或跳过） */
   let roadLabels = '';
   for (const r of (d.roads || [])) {
     if (!r.name || !r.name.trim()) continue;
@@ -199,18 +267,16 @@ function realDriveMap(d, id) {
     roadLabels += placeLabel(placer, x, y, w, h, tag);
   }
 
-  /* 沿途地标：统一 pin + 名称光晕文字（带碰撞避免） */
+  /* 沿途地标名称：光晕文字（绝对坐标碰撞；组内渲染保持相对偏移） */
   let landmarks = '';
-  (d.landmarks || []).forEach(l => {
-    const [x, y] = proj(l.coord);
+  for (const l of lmks) {
     const nameW = l.name.length * 12 * 0.55, nameH = 16;
-    const label = dy => haloText(0, 34 + dy, l.name, 12);
     landmarks += `
-    <g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">
+    <g transform="translate(${l.p[0].toFixed(1)},${l.p[1].toFixed(1)})">
       ${pinMarker(0, 0, l.icon, MAP_C.accent, id)}
-      ${placeLabel(placer, 0, 34, nameW, nameH, label)}
+      ${placeLabel(placer, l.p[0], l.p[1] + 34, nameW, nameH, dy => haloText(0, 34 + dy, l.name, 12))}
     </g>`;
-  });
+  }
 
   return `
 <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="自驾路线图（真实地理）" style="font-family:system-ui,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
@@ -274,8 +340,11 @@ function realHikeMap(h, id) {
     <text x="${W / 2}" y="${H - 16}" text-anchor="middle" font-size="13" fill="${MAP_C.sub}">虚线为点位示意连接（山野步道无地图数据）</text>`;
   }
 
+  /* 点位投影后做扩散，避免真实坐标几乎重合的点位圆叠圆 */
+  const spotPts = h.spots.map(s => proj(s.coord));
+  spreadPoints(spotPts, 46, 12);
   const spots = h.spots.map((s, i) => {
-    const [x, y] = proj(s.coord);
+    const [x, y] = spotPts[i];
     const isStart = i === 0, isEnd = i === h.spots.length - 1;
     const below = i % 2 === 0;
     const icon = s.icon || (isStart ? '🚩' : isEnd ? '🏁' : '⭐');
@@ -340,7 +409,7 @@ function schematicDriveMap(drive) {
     <rect x="-140" y="-28" width="280" height="50" rx="15" fill="#FFFFFF" opacity="0.95" stroke="${MAP_C.route}" stroke-width="2.5"/>
     <text y="6" text-anchor="middle" font-size="20" font-weight="700" fill="${MAP_C.text}">🚗 ${drive.time} · 约 ${drive.km} 公里</text>
   </g>
-  ${compass(745, 84, 'scd')}
+  ${compass(34, 64, 'scd')}
   <text x="400" y="326" text-anchor="middle" font-size="13" fill="${MAP_C.sub}">示意图 · 运行 route-pipeline 生成真实地理路线图</text>
 </svg>`;
 }
@@ -429,8 +498,16 @@ function footprintMapSVG(doneIds) {
   const bounds = mapBounds(all);
 
   const [hx, hy] = proj(home);
-  const markers = pts.map(p => {
-    const [x, y] = proj(p.coord);
+  /* 目的地：把「家的锚点」作为固定点一起扩散，保证 marker 既彼此分开也不压住家 */
+  const allPts = [[hx, hy], ...pts.map(p => {
+    let [x, y] = proj(p.coord);
+    if (y > H - 46) y = H - 46;
+    return [Math.max(20, Math.min(W - 20, x)), Math.max(20, y)];
+  })];
+  spreadPoints(allPts, 32, 20, new Set([0]));
+  const mPts = allPts.slice(1).map(p => [p[0], Math.min(p[1], H - 46)]);
+  const markers = pts.map((p, i) => {
+    const [x, y] = mPts[i];
     const tip = `${p.title}｜${p.date}${p.archived ? '（备用）' : ''}${p.done ? '｜已打卡 ✅' : ''}`;
     return p.done
       ? `<g filter="url(#glow-fp)"><title>${tip}</title><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="13" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="2.5"/><text x="${x.toFixed(1)}" y="${(y + 5).toFixed(1)}" text-anchor="middle" font-size="15">⭐</text></g>`
