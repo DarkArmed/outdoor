@@ -96,6 +96,7 @@ console.log('首页 renderHome:');
   const fp = els['footprint-map'].innerHTML;
   check('足迹地图渲染（含家与目的地标记）', fp.includes('svg') && fp.includes('🏠') && fp.includes('📍'));
   check('足迹地图去重+备用标注（16 标记：17 计划 −1 合并 +1 备用坝上）', (fp.match(/📍/g) || []).length === 16 && fp.includes('（备用）'));
+  check('足迹地图图例（PRD-003：已打卡/还没去/家）', fp.includes('已打卡') && fp.includes('还没去'));
   /* PRD-002 修订：成就面板入抽屉 */
   const drawer = ctx.document.getElementById('achieve-drawer');
   const backdrop = ctx.document.getElementById('achieve-backdrop');
@@ -151,13 +152,41 @@ console.log('地图渲染:');
   const plan = ctx.PLANS.find(p => p.id === '2026-09-05');
   const drive = ctx.driveMapSVG(plan);
   check('自驾图是真实地理（含路线折线）', drive.includes('95.2 公里'));
-  check('自驾图含路网背景层（2.3.5）', drive.includes('netclip') && drive.includes('#D9D2C5'));
+  check('自驾图含路网背景层（PRD-003 唯一 clip + 道路分级）', drive.includes('clip-path="url(#netclip-drv)"') && drive.includes('#F0B542'));
+  check('自驾图新视觉（纸色底 + 路线主色 + 软阴影）', drive.includes('#F4EFE4') && drive.includes('#E8590C') && drive.includes('feDropShadow'));
+  check('自驾图光晕文字排版（paint-order）', drive.includes('paint-order="stroke"'));
   check('起点标注为家', drive.includes('>家<') || drive.includes('家（'));
   const hike = ctx.hikeMapSVG(ctx.PLANS.find(p => p.id === '2026-09-05'));
   check('徒步图含活动标注', hike.includes('踩水') || hike.includes('打水仗') || hike.includes('搭天幕'));
   const ski = ctx.PLANS.find(p => p.id === '2026-12-05');
   check('场地型计划（滑雪）有徒步图', ctx.hikeMapSVG(ski).includes('svg'));
   check('E 类徽标配色', ctx.typeClass ? true : true);
+}
+
+/* ---------- ③b 画布比例（PRD-003 §3.6）：真实地理地图比例 4:3 ~ 1:1 ---------- */
+console.log('画布比例（PRD-003 §3.6）:');
+{
+  const { ctx } = makeCtx('');
+  for (const f of SCRIPTS) load(ctx, f);
+  const view = svg => { const m = svg.match(/viewBox="0 0 (\d+) (\d+)"/); return m ? [+m[1], +m[2]] : null; };
+  const inBand = v => { const ratio = v[0] / v[1]; return ratio >= 0.99 && ratio <= 1.34; };
+  let checked = 0; const bad = [];
+  for (const p of ctx.PLANS) {
+    const r = ctx.ROUTES && ctx.ROUTES[p.id];
+    if (!r) continue;
+    if (r.drive && r.drive.polyline && r.drive.polyline.length >= 2) {
+      const v = view(ctx.driveMapSVG(p));
+      if (v) { checked++; if (!inBand(v)) bad.push(`自驾:${p.id}`); }
+    }
+    if (r.hike && r.hike.spots && r.hike.spots.length) {
+      const v = view(ctx.hikeMapSVG(p));
+      if (v) { checked++; if (!inBand(v)) bad.push(`徒步:${p.id}`); }
+    }
+  }
+  const fv = view(ctx.footprintMapSVG([]));
+  if (fv) { checked++; if (!inBand(fv)) bad.push('足迹'); }
+  check(`真实地图画布比例在 4:3~1:1（共 ${checked} 张）`, bad.length === 0);
+  for (const b of bad) console.log(`    ❌ ${b}`);
 }
 
 /* ---------- ④ 活动图标匹配 ---------- */
