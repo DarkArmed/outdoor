@@ -65,21 +65,36 @@ function graticule(W, H, proj, bounds) {
   return out;
 }
 
-/* ---------- 坐标投影：经纬度 → SVG 画布 ---------- */
-function projectPoints(allCoords, W, H, pad) {
-  const lons = allCoords.map(c => c[0]), lats = allCoords.map(c => c[1]);
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
+/* ---------- 坐标投影：经纬度 → SVG 画布 ----------
+   内容 bbox 先扩展成与画布同宽高比的地理「窗口」：窗口正好填满画布，
+   路线画在其中、四周空白由路网/地形填充（不拉伸真实比例，统一缩放）。
+   返回 { proj, bounds }，bounds 为窗口范围（graticule / 路网用它铺满全幅）。 */
+function makeProj(all, W, H, pad) {
+  const [minLon, minLat, maxLon, maxLat] = mapBounds(all);
   const lat0 = (minLat + maxLat) / 2;
   const kx = Math.cos((lat0 * Math.PI) / 180); // 经度随纬度收缩
   const w = Math.max((maxLon - minLon) * kx, 1e-6);
   const h = Math.max(maxLat - minLat, 1e-6);
-  const scale = Math.min((W - pad * 2) / w, (H - pad * 2) / h);
-  const ox = (W - w * scale) / 2, oy = (H - h * scale) / 2;
-  return c => [
-    ox + (c[0] - minLon) * kx * scale,
-    H - (oy + (c[1] - minLat) * scale), // Y 翻转：北在上
-  ];
+  const target = (W - pad * 2) / (H - pad * 2);
+  const win = [minLon, minLat, maxLon, maxLat];
+  if (w / h < target) {            // 内容更竖 → 横向扩展经度，两侧由路网填充
+    const dLon = (h * target - w) / kx / 2;
+    win[0] -= dLon; win[2] += dLon;
+  } else {                         // 内容更横 → 纵向扩展纬度，上下由路网填充
+    const dLat = (w / target - h) / 2;
+    win[1] -= dLat; win[3] += dLat;
+  }
+  const [m1, m2, M1, M2] = win;
+  const ww = Math.max((M1 - m1) * kx, 1e-6), hh = Math.max(M2 - m2, 1e-6);
+  const scale = Math.min((W - pad * 2) / ww, (H - pad * 2) / hh);
+  const ox = (W - ww * scale) / 2, oy = (H - hh * scale) / 2;
+  return {
+    bounds: win,
+    proj: c => [
+      ox + (c[0] - m1) * kx * scale,
+      H - (oy + (c[1] - m2) * scale), // Y 翻转：北在上
+    ],
+  };
 }
 
 function pathFrom(coords, proj) {
@@ -96,16 +111,17 @@ function mapBounds(all) {
   ];
 }
 
-/* ---------- 自适应画布高度（PRD-003：消除大块空白） ----------
-   固定宽 W，按地理内容宽高比计算画布高：内容正好填满高度则无上下留白，
-   宽浅路线画布变矮、窄长路线画布变高。宽保持固定 → 线条粗细在所有图一致。 */
+/* ---------- 自适应画布高度：固定宽、高在合理区间内随内容（PRD-003 §3.6）
+   宽度固定 → 页面布局一致；高度按内容宽高比计算，但钳在 [minH,maxH] 区间
+   （画布比例 4:3 ~ 1:1）。超出区间的极端路线，由 makeProj 扩展可见窗口
+   用路网补空白，不迁就极端形状。 */
 function contentRatio(bounds) {
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const kx = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
   return Math.max((maxLon - minLon) * kx, 1e-6) / Math.max(maxLat - minLat, 1e-6);
 }
-function fitCanvasH(W, ratio, PAD, minH, maxH) {
-  const perfect = (W - PAD * 2) / ratio + PAD * 2; // 内容正好填满时所需高度
+function adaptiveH(W, bounds, PAD, minH, maxH) {
+  const perfect = (W - PAD * 2) / contentRatio(bounds) + PAD * 2; // 内容正好填满画布所需高度
   return Math.round(Math.max(minH, Math.min(perfect, maxH)));
 }
 /* 文本宽度估算：CJK≈size、emoji≈1.1×size、ASCII≈0.55×size（标签碰撞用） */
@@ -135,12 +151,19 @@ function makeLabelPlacer() {
     add(x, y, w, h) { placed.push({ x, y, w, h }); },
   };
 }
+/* 就近放标签：按候选偏移由近到远找第一个不重叠位置，返回 { html, dy }（选中偏移）。
+   传 W/H 时额外限制 label 不出画布；无候选返回 null。 */
+function placeLabelAt(placer, x, y, w, h, render, cands, W, H) {
+  for (const dy of (cands || [0, 18, -18, 36, -36])) {
+    if (W) { const bx = x - w / 2, by = y + dy - h / 2; if (bx < 2 || bx + w > W - 2 || by < 2 || by + h > H - 2) continue; }
+    if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return { html: render(dy), dy }; }
+  }
+  return null;
+}
 /* 在候选偏移里找不重叠的位置渲染；都重叠则跳过（返回 ''）。cands 可自定义候选偏移 */
 function placeLabel(placer, x, y, w, h, render, cands) {
-  for (const dy of (cands || [0, 18, -18, 36, -36])) {
-    if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return render(dy); }
-  }
-  return '';
+  const r = placeLabelAt(placer, x, y, w, h, render, cands);
+  return r ? r.html : '';
 }
 /* 徒步点位名称/事项块放置：下/上/更下/更上四档候选，避开信息牌/指北针/其他点位；保底不丢名字 */
 function placeHikeBlock(placer, x, y, name, act, preferAbove) {
@@ -178,6 +201,33 @@ function pushCircleFromRect(cx, cy, r, rx, ry, rw, rh, pad) {
   }
   const push = r + pad - d;
   return [cx + dx / d * push, cy + dy / d * push];
+}
+/* 圆是否与矩形（含 pad 间距）相交 */
+function circleHitsRect(cx, cy, r, rx, ry, rw, rh, pad) {
+  const nx = Math.max(rx, Math.min(cx, rx + rw));
+  const ny = Math.max(ry, Math.min(cy, ry + rh));
+  const dx = cx - nx, dy = cy - ny;
+  return dx * dx + dy * dy < (r + pad) * (r + pad);
+}
+/* 把圆从一组矩形中整体推出：逐个矩形尝试「上下左右 + 四角 + 沿最近边」逃逸方向，
+   选位移最小且能清出全部矩形的位置。避免顺序推挤在多个障碍间来回振荡。 */
+function pushOutOfRects(cx, cy, r, rects, pad) {
+  if (!rects.some(o => circleHitsRect(cx, cy, r, o[0], o[1], o[2], o[3], pad))) return [cx, cy];
+  const cands = [];
+  const clear = (x, y) => !rects.some(o => circleHitsRect(x, y, r, o[0], o[1], o[2], o[3], pad));
+  for (const o of rects) {
+    const [rx, ry, rw, rh] = o;
+    cands.push([rx - r - pad, cy], [rx + rw + r + pad, cy], [cx, ry - r - pad], [cx, ry + rh + r + pad]);
+    cands.push([rx - r - pad, ry - r - pad], [rx + rw + r + pad, ry - r - pad], [rx - r - pad, ry + rh + r + pad], [rx + rw + r + pad, ry + rh + r + pad]);
+    cands.push(pushCircleFromRect(cx, cy, r, rx, ry, rw, rh, pad));
+  }
+  let best = null, bestD = Infinity;
+  for (const c of cands) {
+    if (!clear(c[0], c[1])) continue;
+    const d = Math.hypot(c[0] - cx, c[1] - cy);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best || [cx, cy];
 }
 
 /* 点集扩散：迭代推开距离小于 minD 的点对（确定性），用于挤在一起的 marker/点位
@@ -265,43 +315,49 @@ function realDriveMap(d, id) {
   const W = 800, PAD = 82;
   const all = [...d.polyline, d.from.coord, d.to.coord, ...(d.landmarks || []).map(l => l.coord)];
   const bounds = mapBounds(all);
-  const H = fitCanvasH(W, contentRatio(bounds), PAD, 260, 520);
-  const proj = projectPoints(all, W, H, PAD);
+  const H = adaptiveH(W, bounds, PAD, 600, 800);    // 画布比例 4:3（横）~ 1:1（方）
+  const { proj, bounds: win } = makeProj(all, W, H, PAD); // 窗口填满画布，空白由路网填充
   const route = pathFrom(d.polyline, proj);
   const [sx, sy] = proj(d.from.coord);
   const [ex, ey] = proj(d.to.coord);
 
   const placer = makeLabelPlacer();
-  /* 固定障碍（绝对坐标）：信息牌 / 指北针 / 起终点圆 / 起终点名称 —— 标签需避开 */
+  /* 固定障碍（绝对坐标）：信息牌 / 指北针 / 起终点圆 */
   placer.obstacle(W / 2, 44, 304, 46);
   placer.obstacle(46, 84, 44, 58);
   placer.obstacle(sx, sy, 34, 34);
   placer.obstacle(ex, ey, 34, 34);
-  placer.obstacle(sx, sy + 40, 26, 16);
 
-  /* 地标：pin 与起终点圆 / 信息牌 / 指北针重叠时整体推出；随后注册为障碍 */
-  const lmks = (d.landmarks || []).map(l => ({ icon: l.icon, name: l.name, p: proj(l.coord) }));
-  for (const l of lmks) {
-    let [px, py] = l.p;
-    for (const rect of [
-      [sx - 17, sy - 17, 34, 34], // 起点圆
-      [ex - 17, ey - 17, 34, 34], // 终点圆
-      [W / 2 - 152, 21, 304, 46], // 信息牌
-      [46 - 22, 54, 44, 64],      // 指北针（左上角）
-    ]) {
-      [px, py] = pushCircleFromRect(px, py, 13, rect[0], rect[1], rect[2], rect[3], 4);
-    }
-    l.p = [px, py];
-    placer.obstacle(l.p[0], l.p[1], 26, 26);
-  }
-
-  /* 终点名：优先放 marker 下方（避开上方信息牌），在路网/地标标签之前放置，
-     让后续标签避让终点名；候选跨度更宽，避免被 pin/其他标签挤到保底压住元素 */
+  /* 起终点名称 label 最优先：先于地标放置、就近（不被地标挤走），
+     选中位置注册为障碍，地标 pin / 路名 / 地标名全部避让。 */
   const endW = textWidth(d.to.name, 15), endH = 18;
-  let endLabelHtml = placeLabel(placer, ex, ey + 40, endW, endH, dy => haloText(0, 40 + dy, d.to.name, 15), [0, 18, -18, 36, -36, 54, -54, 72, -72]);
-  if (!endLabelHtml) { // 保底：注册默认位置并渲染，保证终点名不丢、后续标签避让
-    placer.add(ex, ey + 40, endW, endH);
-    endLabelHtml = haloText(0, 40, d.to.name, 15);
+  const endLb = placeLabelAt(placer, ex, ey + 40, endW, endH, dy => haloText(0, 40 + dy, d.to.name, 15), [0, 18, -18, 36, -36, 54, -54, 72, -72], W, H);
+  const endHtml = endLb ? endLb.html : haloText(0, 40, d.to.name, 15);
+  const endY = endLb ? ey + 40 + endLb.dy : ey + 40;
+  if (!endLb) placer.add(ex, ey + 40, endW, endH); // 保底：注册默认位置，后续避让
+
+  const startW = textWidth(d.from.name, 14), startH = 16;
+  const startLb = placeLabelAt(placer, sx, sy + 40, startW, startH, dy => haloText(0, 40 + dy, d.from.name, 14), [0, 18, -18, 36, -36, 54, -54, 72, -72], W, H);
+  const startHtml = startLb ? startLb.html : haloText(0, 40, d.from.name, 14);
+  const startY = startLb ? sy + 40 + startLb.dy : sy + 40;
+  if (!startLb) placer.add(sx, sy + 40, startW, startH);
+
+  /* 地标：pin 避开起终点（圆 + 名称 label 合并为一个整体）、信息牌、指北针。
+     合并避免「被终点圆推下、又被终点名推回」的振荡；随后注册为障碍 */
+  const lmks = (d.landmarks || []).map(l => ({ icon: l.icon, name: l.name, p: proj(l.coord) }));
+  const startRegion = [
+    Math.min(sx - 17, sx - startW / 2), Math.min(sy - 17, startY - startH / 2),
+    Math.max(sx + 17, sx + startW / 2) - Math.min(sx - 17, sx - startW / 2),
+    Math.max(sy + 17, startY + startH / 2) - Math.min(sy - 17, startY - startH / 2),
+  ];
+  const endRegion = [
+    Math.min(ex - 17, ex - endW / 2), Math.min(ey - 17, endY - endH / 2),
+    Math.max(ex + 17, ex + endW / 2) - Math.min(ex - 17, ex - endW / 2),
+    Math.max(ey + 17, endY + endH / 2) - Math.min(ey - 17, endY - endH / 2),
+  ];
+  for (const l of lmks) {
+    l.p = pushOutOfRects(l.p[0], l.p[1], 13, [startRegion, endRegion, [W / 2 - 152, 21, 304, 46], [46 - 22, 54, 44, 64]], 4);
+    placer.obstacle(l.p[0], l.p[1], 26, 26);
   }
 
   /* 道路名称：小 pill + 碰撞避免（避开 marker/info/其他标签，重叠自动挪位或跳过） */
@@ -334,9 +390,9 @@ function realDriveMap(d, id) {
   ${mapDefs(id, W, H, 20)}
   <rect width="${W}" height="${H}" rx="20" fill="${MAP_C.paper}"/>
   <rect width="${W}" height="${H}" rx="20" fill="url(#vig-${id})"/>
-  ${graticule(W, H, proj, bounds)}
-  <!-- 路网背景（OSM 主要道路，分级示意） -->
-  ${networkLayer(bounds, proj, id)}
+  ${graticule(W, H, proj, win)}
+  <!-- 路网背景（OSM 主要道路，分级示意，铺满全幅） -->
+  ${networkLayer(win, proj, id)}
   <!-- 真实路线：白描边 + 烧砖橙主路（细线条，避免遮挡） -->
   <path d="${route}" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="${route}" fill="none" stroke="${MAP_C.route}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -348,13 +404,13 @@ function realDriveMap(d, id) {
   <g transform="translate(${sx.toFixed(1)},${sy.toFixed(1)})" filter="url(#sh-${id})">
     <circle r="17" fill="${MAP_C.gold}" stroke="#FFFFFF" stroke-width="3"/>
     <text y="6" text-anchor="middle" font-size="16">🏠</text>
-    ${haloText(0, 40, d.from.name, 14)}
+    ${startHtml}
   </g>
   <!-- 终点 -->
   <g transform="translate(${ex.toFixed(1)},${ey.toFixed(1)})" filter="url(#sh-${id})">
     <circle r="17" fill="${MAP_C.green}" stroke="#FFFFFF" stroke-width="3"/>
     <text y="6" text-anchor="middle" font-size="16">📍</text>
-    ${endLabelHtml}
+    ${endHtml}
   </g>
   <!-- 真实里程信息牌（缩小，避免盖住路线） -->
   <g transform="translate(${W / 2},44)">
@@ -371,8 +427,8 @@ function realHikeMap(h, id) {
   const W = 800, PAD = 85;
   const coords = h.spots.map(s => s.coord).concat(h.path || []);
   const bounds = mapBounds(coords);
-  const H = fitCanvasH(W, contentRatio(bounds), PAD, 250, 520);
-  const proj = projectPoints(coords, W, H, PAD);
+  const H = adaptiveH(W, bounds, PAD, 600, 800);    // 画布比例 4:3（横）~ 1:1（方）
+  const { proj, bounds: win } = makeProj(coords, W, H, PAD); // 窗口填满画布
 
   /* 路径：真实步行折线（实线）或点位示意连线（虚线） */
   let pathLayer;
@@ -425,7 +481,7 @@ function realHikeMap(h, id) {
   ${mapDefs(id, W, H, 20)}
   <rect width="${W}" height="${H}" rx="20" fill="${MAP_C.paper}"/>
   <rect width="${W}" height="${H}" rx="20" fill="url(#vig-${id})"/>
-  ${graticule(W, H, proj, bounds)}
+  ${graticule(W, H, proj, win)}
   ${pathLayer}
   ${spots}
   ${infoCard(W / 2, 40, `🥾 ${h.title}${h.length ? ' · ' + h.length : ''}`, MAP_C.green, 420, id)}
@@ -552,8 +608,8 @@ function footprintMapSVG(doneIds) {
   const W = 800, PAD = 56;
   const all = [...pts.map(p => p.coord), home];
   const bounds = mapBounds(all);
-  const H = fitCanvasH(W, contentRatio(bounds), PAD, 280, 560);
-  const proj = projectPoints(all, W, H, PAD);
+  const H = adaptiveH(W, bounds, PAD, 600, 800);    // 画布比例 4:3（横）~ 1:1（方）
+  const { proj, bounds: win } = makeProj(all, W, H, PAD); // 窗口填满画布
 
   const [hx, hy] = proj(home);
   /* 目的地：把「家的锚点」作为固定点一起扩散，保证 marker 既彼此分开也不压住家 */
@@ -586,8 +642,8 @@ function footprintMapSVG(doneIds) {
     ${mapDefs('fp', W, H, 18)}
     <rect width="${W}" height="${H}" rx="18" fill="${MAP_C.paper}"/>
     <rect width="${W}" height="${H}" rx="18" fill="url(#vig-fp)"/>
-    ${graticule(W, H, proj, bounds)}
-    ${networkLayer(bounds, proj, 'fp', true)}
+    ${graticule(W, H, proj, win)}
+    ${networkLayer(win, proj, 'fp', true)}
     <g filter="url(#sh-fp)"><title>家</title><circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="15" fill="#FFFFFF" stroke="${MAP_C.accent}" stroke-width="3"/><text x="${hx.toFixed(1)}" y="${(hy + 6).toFixed(1)}" text-anchor="middle" font-size="16">🏠</text></g>
     ${markers}
     ${legend}

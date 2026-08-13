@@ -163,6 +163,32 @@ console.log('地图渲染:');
   check('E 类徽标配色', ctx.typeClass ? true : true);
 }
 
+/* ---------- ③b 画布比例（PRD-003 §3.6）：真实地理地图比例 4:3 ~ 1:1 ---------- */
+console.log('画布比例（PRD-003 §3.6）:');
+{
+  const { ctx } = makeCtx('');
+  for (const f of SCRIPTS) load(ctx, f);
+  const view = svg => { const m = svg.match(/viewBox="0 0 (\d+) (\d+)"/); return m ? [+m[1], +m[2]] : null; };
+  const inBand = v => { const ratio = v[0] / v[1]; return ratio >= 0.99 && ratio <= 1.34; };
+  let checked = 0; const bad = [];
+  for (const p of ctx.PLANS) {
+    const r = ctx.ROUTES && ctx.ROUTES[p.id];
+    if (!r) continue;
+    if (r.drive && r.drive.polyline && r.drive.polyline.length >= 2) {
+      const v = view(ctx.driveMapSVG(p));
+      if (v) { checked++; if (!inBand(v)) bad.push(`自驾:${p.id}`); }
+    }
+    if (r.hike && r.hike.spots && r.hike.spots.length) {
+      const v = view(ctx.hikeMapSVG(p));
+      if (v) { checked++; if (!inBand(v)) bad.push(`徒步:${p.id}`); }
+    }
+  }
+  const fv = view(ctx.footprintMapSVG([]));
+  if (fv) { checked++; if (!inBand(fv)) bad.push('足迹'); }
+  check(`真实地图画布比例在 4:3~1:1（共 ${checked} 张）`, bad.length === 0);
+  for (const b of bad) console.log(`    ❌ ${b}`);
+}
+
 /* ---------- ④ 活动图标匹配 ---------- */
 console.log('活动图标匹配:');
 {
