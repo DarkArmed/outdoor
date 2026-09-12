@@ -8,13 +8,15 @@
 
 | 文档 | 说明 |
 |---|---|
-| 🌐 [**网站（本地）**](site/index.html) | 图文版计划站：卡通插图、路线图、可勾选装备清单 —— 双击 `site/index.html` 打开 |
-| 📐 [**文档中心**](docs/README.md) | 需求文档（REQ）/ 决策记录（ADR）的组织规则与索引 |
+| 🌐 [**网站（本地）**](site/index.html) | 图文版计划站：卡通插图、路线图、可勾选装备清单 —— 双击 `site/index.html` 打开（**后端服务化改造中，`site/` 本阶段不动**） |
+| 🏗️ [**任务协调**](docs/tasks/README.md) | 后端服务化改造的任务清单（跨 session / 并行协作入口） |
+| 📐 [**文档中心**](docs/README.md) | 需求文档（PRD）/ 决策记录（ADR）的组织规则与索引 |
 | [**00-赛季总览**](00-赛季总览.md) | 整个赛季的节奏框架、地点库、安全红线 —— **先读这个** |
 | [装备总览](equipment/装备总览.md) | 全部装备的台账：已有 / 待确认 / 待购 |
 | [采购清单](equipment/采购清单.md) | 待购装备的优先级采购单 |
 | [周计划](/plans/) | 按周生成的具体活动方案 |
 | [周计划模板](plans/周计划模板.md) | 新增一周时复制此模板 |
+| [backend/](backend/) | FastAPI 后端服务（多用户、持久化、方案/出行计划解耦）|
 
 ## 目录结构
 
@@ -31,17 +33,21 @@ outdoor/
 ├── equipment/
 │   ├── 装备总览.md          # 装备台账
 │   └── 采购清单.md          # 采购计划
-└── site/                   # 图文版网站（纯静态，本地打开即用）
-    ├── index.html           # 首页：时间轴 + 计划卡片
-    ├── plan.html            # 计划详情页（?id= 驱动）
-    ├── css/style.css
-    └── js/
-        ├── scenes.js        # 卡通插图生成器（SVG）
-        ├── maps.js          # 路线图渲染（真实地理优先，示意图回退）
-        ├── app.js           # 渲染逻辑（清单勾选存 localStorage）
-        └── data/            # 计划数据 + routes.js（流水线生成的真实路线）
+├── backend/                # 后端服务（FastAPI + PostgreSQL/SQLite + JWT）
+├── web/                    # 新前端（React + Vite + TS，本阶段不做）
+├── docs/tasks/             # 项目任务协调（跨 session / 并行）
+├── site/                   # 旧图文版网站（纯静态，本阶段不动，过渡期保留）
+│   ├── index.html           # 首页：时间轴 + 计划卡片
+│   ├── plan.html            # 计划详情页（?id= 驱动）
+│   ├── css/style.css
+│   └── js/
+│       ├── scenes.js        # 卡通插图生成器（SVG）
+│       ├── maps.js          # 路线图渲染（真实地理优先，示意图回退）
+│       ├── app.js           # 渲染逻辑（清单勾选存 localStorage）
+│       └── data/            # 计划数据 + routes.js（流水线生成的真实路线）
 └── tools/
-    └── route-pipeline/      # 路线流水线：高德 API → 真实路线图（见该目录 README）
+    ├── route-pipeline/      # 路线流水线：高德 API → 真实路线图
+    └── dump-site-data.js    # 把 site/js/data 导出为 JSON，供后端 seed 使用
 ```
 
 ## 使用方式
@@ -58,4 +64,6 @@ outdoor/
 - [x] **11 月**计划（白河湾收官露营 + 温榆河骑行 + 室内攀岩 + 科技馆）
 - [x] **12–2 月冬季模式**计划（[00-冬季模式计划](00-冬季模式计划.md)）
 - [x] 图文版网站（`site/`，卡通插图 + 路线图 + 可勾选清单）
+- [x] **后端服务化**（FastAPI + 多用户 + 方案/出行计划解耦 + JWT，见 [backend/](backend/)）
+- [ ] 前端 React 重写 + 多用户界面（下一阶段）
 - [ ] 确认现有露营装备 → 出最终采购单
