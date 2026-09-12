@@ -9,7 +9,7 @@
 | 文档 | 说明 |
 |---|---|
 | 🌐 [**网站（本地）**](site/index.html) | 图文版计划站：卡通插图、路线图、可勾选装备清单 —— 双击 `site/index.html` 打开（**后端服务化改造中，`site/` 本阶段不动**） |
-| 🏗️ [**任务协调**](tasks/README.md) | 后端服务化改造的任务清单（跨 session / 并行协作入口） |
+| 🏗️ [**任务协调**](docs/tasks/README.md) | 后端服务化改造的任务清单（跨 session / 并行协作入口） |
 | 📐 [**文档中心**](docs/README.md) | 需求文档（PRD）/ 决策记录（ADR）的组织规则与索引 |
 | [**00-赛季总览**](00-赛季总览.md) | 整个赛季的节奏框架、地点库、安全红线 —— **先读这个** |
 | [装备总览](equipment/装备总览.md) | 全部装备的台账：已有 / 待确认 / 待购 |
@@ -35,7 +35,7 @@ outdoor/
 │   └── 采购清单.md          # 采购计划
 ├── backend/                # 后端服务（FastAPI + PostgreSQL/SQLite + JWT）
 ├── web/                    # 新前端（React + Vite + TS，本阶段不做）
-├── tasks/                  # 后端服务化改造任务协调（跨 session / 并行）
+├── docs/tasks/             # 项目任务协调（跨 session / 并行）
 ├── site/                   # 旧图文版网站（纯静态，本阶段不动，过渡期保留）
 │   ├── index.html           # 首页：时间轴 + 计划卡片
 │   ├── plan.html            # 计划详情页（?id= 驱动）
