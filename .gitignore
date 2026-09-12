@@ -1,3 +1,14 @@
+# 后端
+backend/.venv/
+backend/.env
+backend/test.db
+backend/*.db
+backend/__pycache__/
+backend/app/__pycache__/
+backend/app/routers/__pycache__/
+backend/tests/__pycache__/
+backend/.pytest_cache/
+
 # 用户配置源（家庭位置等个人信息，不进 git）
 config/profile.json
 # 网站用的配置派生物（由同步脚本生成，可随时重建）
@@ -6,3 +17,5 @@ site/js/data/profile.js
 tools/route-pipeline/config.json
 # 高德 API 调用缓存（本地生成，可随时重建）
 tools/route-pipeline/.cache.json
+# Node
+node_modules/
