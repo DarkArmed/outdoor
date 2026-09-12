@@ -26,12 +26,24 @@ def update_profile(
     db: Session = Depends(get_db),
 ):
     profile = db.query(Profile).filter(Profile.user_id == current_user.id).first()
-    if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
-
     update_data: dict[str, Any] = payload.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(profile, key, value)
+
+    if not profile:
+        # Upsert: create a new profile from the provided data.
+        defaults = {
+            "home_name": "",
+            "home_city": "",
+            "family_travelers": [],
+            "child": {},
+            "prefs": {},
+        }
+        defaults.update(update_data)
+        profile = Profile(user_id=current_user.id, **defaults)
+        db.add(profile)
+    else:
+        for key, value in update_data.items():
+            setattr(profile, key, value)
+
     db.commit()
     db.refresh(profile)
     return profile

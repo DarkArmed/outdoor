@@ -2,13 +2,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import get_settings
-from app.database import Base, engine
-from app.models import User
+from app.database import Base, engine, get_db
+from app.models import BadgeUnlock, User
 from app.routers import auth, milestones, plans, profile, routes, state, trips, users
-from app.schemas import UserOut
+from app.schemas import BadgeUnlockOut, UserOut
 
 settings = get_settings()
 
@@ -48,6 +49,14 @@ def health():
 @app.get("/api/me", response_model=UserOut)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.get("/api/me/badges", response_model=list[BadgeUnlockOut])
+def my_badges(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(BadgeUnlock).filter(BadgeUnlock.user_id == current_user.id).all()
 
 
 if __name__ == "__main__":
