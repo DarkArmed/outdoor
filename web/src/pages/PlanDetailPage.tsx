@@ -6,6 +6,8 @@ import { SectionNav } from '@/components/SectionNav'
 import { ItineraryTimeline, type ItineraryItem } from '@/components/ItineraryTimeline'
 import { GearChecklist } from '@/components/GearChecklist'
 import { TaskChecklist } from '@/components/TaskChecklist'
+import { DriveMap } from '@/components/DriveMap'
+import { HikeMap } from '@/components/HikeMap'
 import { sceneSVG } from '@/svg/scenes'
 import type { TripDetailOut } from '@/api/types'
 
@@ -176,8 +178,9 @@ export function PlanDetailPage() {
 
           <section id="route" className="bg-card rounded-2xl p-6 shadow-sm">
             <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">路线</h2>
-            <div className="bg-paper border border-gray-200 rounded-xl p-8 text-center text-muted">
-              地图占位（后续从 site/js/maps.js 移植真实地理路线图）
+            <div className="space-y-4">
+              <DriveMap tripId={trip?.id} plan={plan as Record<string, unknown>} />
+              <HikeMap tripId={trip?.id} plan={plan as Record<string, unknown>} />
             </div>
           </section>
 

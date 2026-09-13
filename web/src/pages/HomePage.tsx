@@ -1,12 +1,47 @@
+import { useEffect, useState } from 'react'
 import { usePlans, useProfile } from '@/hooks/useApi'
 import { PlanCard } from '@/components/PlanCard'
 import { MonthRail } from '@/components/MonthRail'
+import { BadgeDrawer } from '@/components/BadgeDrawer'
 import { sceneSVG } from '@/svg/scenes'
 import { groupPlansByMonth, heroSubtitle, MONTHS, siteTitle } from '@/utils/date'
 
 export function HomePage() {
   const { data: plans, error, isLoading } = usePlans()
   const { data: profile } = useProfile()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [panel, setPanel] = useState<'badges' | 'footprint'>('badges')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const p = params.get('panel')
+    if (p === 'badges' || p === 'footprint') {
+      setPanel(p)
+      setDrawerOpen(true)
+    }
+  }, [])
+
+  const openDrawer = (p: 'badges' | 'footprint') => {
+    setPanel(p)
+    setDrawerOpen(true)
+    const url = new URL(window.location.href)
+    url.searchParams.set('panel', p)
+    window.history.replaceState({}, '', url.toString())
+  }
+
+  const closeDrawer = () => {
+    setDrawerOpen(false)
+    const url = new URL(window.location.href)
+    url.searchParams.delete('panel')
+    window.history.replaceState({}, '', url.toString())
+  }
+
+  const changePanel = (p: 'badges' | 'footprint') => {
+    setPanel(p)
+    const url = new URL(window.location.href)
+    url.searchParams.set('panel', p)
+    window.history.replaceState({}, '', url.toString())
+  }
 
   if (isLoading) return <div className="p-8 text-center">加载中…</div>
   if (error) return <div className="p-8 text-center text-coral">加载失败</div>
@@ -34,6 +69,20 @@ export function HomePage() {
           {siteTitle(child?.name)}
         </h1>
         <p className="text-lg text-gray-700 mt-1">{heroSubtitle(child?.name, age, profile?.home_city)}</p>
+        <div className="flex justify-center gap-3 mt-4">
+          <button
+            onClick={() => openDrawer('badges')}
+            className="bg-white/80 hover:bg-white px-4 py-2 rounded-full font-bold shadow-sm"
+          >
+            🏅 徽章墙
+          </button>
+          <button
+            onClick={() => openDrawer('footprint')}
+            className="bg-white/80 hover:bg-white px-4 py-2 rounded-full font-bold shadow-sm"
+          >
+            🗺️ 足迹地图
+          </button>
+        </div>
       </section>
 
       {/* Main */}
@@ -78,6 +127,13 @@ export function HomePage() {
           </section>
         </div>
       </div>
+
+      <BadgeDrawer
+        open={drawerOpen}
+        panel={panel}
+        onClose={closeDrawer}
+        onChangePanel={changePanel}
+      />
     </div>
   )
 }

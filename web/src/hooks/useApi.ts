@@ -1,6 +1,9 @@
 import useSWR, { mutate as globalMutate } from 'swr'
 import { apiClient } from '@/api/client'
-import type { PlanOut, ProfileOut, TripDetailOut, GearItemState, TaskItemState, BadgeUnlockOut, CheckinOut } from '@/api/types'
+import type {
+  PlanOut, ProfileOut, TripDetailOut, GearItemState, TaskItemState,
+  BadgeUnlockOut, CheckinOut, RouteOut, NetworkOut, MilestoneOut,
+} from '@/api/types'
 
 const fetcher = (url: string) => apiClient.get(url).then((res) => res.data)
 
@@ -22,6 +25,22 @@ export function useTrips() {
 
 export function useTrip(id?: number) {
   return useSWR<TripDetailOut>(id ? `/trips/${id}` : null, fetcher)
+}
+
+export function useRoutes() {
+  return useSWR<RouteOut[]>('/routes', fetcher)
+}
+
+export function useRoute(tripId?: number) {
+  return useSWR<RouteOut>(tripId ? `/trips/${tripId}/route` : null, fetcher)
+}
+
+export function useNetwork() {
+  return useSWR<NetworkOut>('/network', fetcher)
+}
+
+export function useMilestones() {
+  return useSWR<MilestoneOut[]>('/milestones', fetcher)
 }
 
 export function useGearStates(tripId?: number) {

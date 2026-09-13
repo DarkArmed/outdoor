@@ -1,7 +1,3 @@
-declare let ROUTES: any;
-declare let NETWORK: any;
-declare let PLANS: any[];
-
 /* ============================================================
    maps.js — 路线图渲染器（PRD-003 视觉精修版）
    优先使用 routes.js 的真实地理数据（高德 GCJ-02 坐标），
@@ -259,15 +255,15 @@ function spreadPoints(pts: any, minD: any, iters?: any, fixed?: any) {
 
 /* ---------- 路网背景：OSM 主要道路（network.js，GCJ-02），分级渲染
    simple=true 时单遍淡渲染（足迹大地图用，省一半体积） ---------- */
-function networkLayer(bounds: any, proj: any, id: any, simple?: any) {
-  if (typeof NETWORK === 'undefined' || !NETWORK || !NETWORK.ways) return '';
+function networkLayer(bounds: any, proj: any, id: any, simple?: any, network?: any) {
+  if (!network || !network.ways) return '';
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const padLon = (maxLon - minLon) * 0.15, padLat = (maxLat - minLat) * 0.15;
   const x0 = minLon - padLon, x1 = maxLon + padLon, y0 = minLat - padLat, y1 = maxLat + padLat;
   const ST = MAP_C.road;
   const SIMPLE = { motorway: ['#E9D9AC', 1.8], trunk: ['#E5D9BA', 1.5] }; // 足迹图只保留高速+干道
   let casing = '', fill = '';
-  for (const w of NETWORK.ways) {
+  for (const w of network.ways) {
     let inside = false;
     for (const p of w.polyline) {
       if (p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1) { inside = true; break; }
@@ -315,7 +311,7 @@ function infoCard(x: any, y: any, text: any, accent: any, w: any, id?: any) {
 }
 
 /* ---------- 真实地理：自驾路线图 ---------- */
-function realDriveMap(d: any, id: any) {
+function realDriveMap(d: any, id: any, network?: any) {
   const W = 800, PAD = 82;
   const all = [...d.polyline, d.from.coord, d.to.coord, ...(d.landmarks || []).map(l => l.coord)];
   const bounds = mapBounds(all);
@@ -396,7 +392,7 @@ function realDriveMap(d: any, id: any) {
   <rect width="${W}" height="${H}" rx="20" fill="url(#vig-${id})"/>
   ${graticule(W, H, proj, win)}
   <!-- 路网背景（OSM 主要道路，分级示意，铺满全幅） -->
-  ${networkLayer(win, proj, id)}
+  ${networkLayer(win, proj, id, false, network)}
   <!-- 真实路线：白描边 + 烧砖橙主路（细线条，避免遮挡） -->
   <path d="${route}" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="${route}" fill="none" stroke="${MAP_C.route}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -573,31 +569,27 @@ function schematicHikeMap(hike: any) {
 }
 
 /* ---------- 对外接口：优先真实数据，回退示意图 ---------- */
-function routeData(planId: any) {
-  return (typeof ROUTES !== 'undefined' && ROUTES[planId]) || null;
-}
-
-export function driveMapSVG(plan: Record<string, unknown>): string {
-  const r = routeData(plan.id);
-  if (r && r.drive && r.drive.polyline && r.drive.polyline.length >= 2) return realDriveMap(r.drive, 'drv');
+export function driveMapSVG(plan: Record<string, unknown>, routeData?: Record<string, unknown>, network?: any): string {
+  const r = routeData;
+  if (r && r.drive && (r.drive as any).polyline && ((r.drive as any).polyline as any[]).length >= 2) return realDriveMap(r.drive, 'drv', network);
   return schematicDriveMap(plan.drive);
 }
 
-export function hikeMapSVG(plan: Record<string, unknown>): string {
-  const r = routeData(plan.id);
-  if (r && r.hike && r.hike.spots && r.hike.spots.length) return realHikeMap(r.hike, 'hik');
+export function hikeMapSVG(plan: Record<string, unknown>, routeData?: Record<string, unknown>): string {
+  const r = routeData;
+  if (r && r.hike && (r.hike as any).spots && ((r.hike as any).spots as any[]).length) return realHikeMap(r.hike, 'hik');
   if (!plan.hike) return '';
   return schematicHikeMap(plan.hike);
 }
 
 /* ---------- 足迹大地图（PRD-002 §四）：全部目的地的真实坐标总览 ---------- */
-export function footprintMapSVG(doneIds: string[]): string {
-  if (typeof ROUTES === 'undefined' || typeof PLANS === 'undefined') return '';
+export function footprintMapSVG(plans: any[], routes: Record<string, any>, doneIds: string[], network?: any): string {
+  if (!plans || !routes) return '';
   const done = new Set(doneIds || []);
   const pts = [];
   let home = null;
-  for (const p of PLANS) {
-    const r = ROUTES[p.id];
+  for (const p of plans) {
+    const r = routes[p.id];
     if (!r || !r.drive || !r.drive.to || !r.drive.to.coord) continue;
     if (!home && r.drive.from && r.drive.from.coord) home = r.drive.from.coord;
     /* 同城多点去重（如多次白河湾）：坐标近似则合并，已打卡状态取或 */
@@ -645,7 +637,7 @@ export function footprintMapSVG(doneIds: string[]): string {
     <rect width="${W}" height="${H}" rx="18" fill="${MAP_C.paper}"/>
     <rect width="${W}" height="${H}" rx="18" fill="url(#vig-fp)"/>
     ${graticule(W, H, proj, win)}
-    ${networkLayer(win, proj, 'fp', true)}
+    ${networkLayer(win, proj, 'fp', true, network)}
     <g filter="url(#sh-fp)"><title>家</title><circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="15" fill="#FFFFFF" stroke="${MAP_C.accent}" stroke-width="3"/><text x="${hx.toFixed(1)}" y="${(hy + 6).toFixed(1)}" text-anchor="middle" font-size="16">🏠</text></g>
     ${markers}
     ${legend}

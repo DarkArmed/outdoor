@@ -36,7 +36,7 @@ describe('maps.ts', () => {
     expect(svg).toContain('测试徒步')
   })
 
-  it('footprintMapSVG returns empty when global ROUTES is absent', () => {
-    expect(footprintMapSVG([])).toBe('')
+  it('footprintMapSVG returns empty when routes/plans are absent', () => {
+    expect(footprintMapSVG([], {}, [])).toBe('')
   })
 })

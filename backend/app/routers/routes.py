@@ -9,6 +9,14 @@ from app.schemas import NetworkOut, RouteOut
 router = APIRouter(prefix="/api", tags=["routes"])
 
 
+@router.get("/routes", response_model=list[RouteOut])
+def list_routes(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return db.query(Route).all()
+
+
 @router.get("/trips/{trip_id}/route", response_model=RouteOut)
 def get_trip_route(
     trip_id: int,
