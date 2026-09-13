@@ -49,6 +49,21 @@ section[id] {
   scroll-margin-top: 16px;
 }
 
+.badge {
+  font-size: 0.78rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #4a5568;
+}
+
+.badge.type-A { background: var(--color-type-a); color: var(--color-type-a-text); }
+.badge.type-B { background: var(--color-type-b); color: var(--color-type-b-text); }
+.badge.type-C { background: var(--color-type-c); color: var(--color-type-c-text); }
+.badge.type-D { background: var(--color-type-d); color: var(--color-type-d-text); }
+.badge.type-E { background: var(--color-type-e); color: var(--color-type-e-text); }
+.badge-mom { background: #ffd9e4; color: #b03060; }
+
 #root {
   min-height: 100svh;
   display: flex;
