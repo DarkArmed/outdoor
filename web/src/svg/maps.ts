@@ -1,6 +1,7 @@
-declare let ROUTES: any;
-declare let NETWORK: any;
-declare let PLANS: any[];
+import type { Bounds, Coord, Projection, DriveRoute, HikeRoute, MapNetwork, DriveSummary, HikeSummary, MapData, FootprintPlan } from './mapTypes'
+export type * from './mapTypes'
+type Rect = [number, number, number, number]
+type LabelPlacer = ReturnType<typeof makeLabelPlacer>
 
 /* ============================================================
    maps.js — 路线图渲染器（PRD-003 视觉精修版）
@@ -34,7 +35,7 @@ export const MAP_C = {
 };
 
 /* ---------- 共享 defs：软阴影 / 辉光 / 唯一 clip ---------- */
-function mapDefs(id: any, W: any, H: any, rx: any) {
+function mapDefs(id: string, W: number, H: number, rx: number) {
   return `
   <defs>
     <clipPath id="netclip-${id}"><rect width="${W}" height="${H}" rx="${rx}"/></clipPath>
@@ -48,13 +49,13 @@ function mapDefs(id: any, W: any, H: any, rx: any) {
 }
 
 /* ---------- 光晕文字：paint-order:stroke 纸色描边，代替重型色块 ---------- */
-function haloText(x: any, y: any, txt: any, size: any, fill?: any, anchor?: any) {
+function haloText(x: number, y: number, txt: string, size: number, fill?: string, anchor?: string) {
   return `<text x="${x}" y="${y}" text-anchor="${anchor || 'middle'}" font-size="${size}" font-weight="700"
     fill="${fill || MAP_C.text}" stroke="${MAP_C.paper}" stroke-width="4.5" paint-order="stroke">${txt}</text>`;
 }
 
 /* ---------- 经纬网（淡 graticule，制造"地图感"） ---------- */
-function graticule(W: any, H: any, proj: any, bounds: any) {
+function graticule(W: number, H: number, proj: Projection, bounds: Bounds) {
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const step = Math.max(0.05, Math.ceil(Math.max(maxLon - minLon, maxLat - minLat) / 4 * 100) / 100);
   let out = '';
@@ -73,14 +74,14 @@ function graticule(W: any, H: any, proj: any, bounds: any) {
    内容 bbox 先扩展成与画布同宽高比的地理「窗口」：窗口正好填满画布，
    路线画在其中、四周空白由路网/地形填充（不拉伸真实比例，统一缩放）。
    返回 { proj, bounds }，bounds 为窗口范围（graticule / 路网用它铺满全幅）。 */
-function makeProj(all: any, W: any, H: any, pad: any) {
+function makeProj(all: Coord[], W: number, H: number, pad: number) {
   const [minLon, minLat, maxLon, maxLat] = mapBounds(all);
   const lat0 = (minLat + maxLat) / 2;
   const kx = Math.cos((lat0 * Math.PI) / 180); // 经度随纬度收缩
   const w = Math.max((maxLon - minLon) * kx, 1e-6);
   const h = Math.max(maxLat - minLat, 1e-6);
   const target = (W - pad * 2) / (H - pad * 2);
-  const win = [minLon, minLat, maxLon, maxLat];
+  const win: Bounds = [minLon, minLat, maxLon, maxLat];
   if (w / h < target) {            // 内容更竖 → 横向扩展经度，两侧由路网填充
     const dLon = (h * target - w) / kx / 2;
     win[0] -= dLon; win[2] += dLon;
@@ -94,21 +95,21 @@ function makeProj(all: any, W: any, H: any, pad: any) {
   const ox = (W - ww * scale) / 2, oy = (H - hh * scale) / 2;
   return {
     bounds: win,
-    proj: c => [
+    proj: (c: Coord): Coord => [
       ox + (c[0] - m1) * kx * scale,
       H - (oy + (c[1] - m2) * scale), // Y 翻转：北在上
     ],
   };
 }
 
-function pathFrom(coords: any, proj: any) {
+function pathFrom(coords: Coord[], proj: Projection) {
   return coords.map((c, i) => {
     const [x, y] = proj(c);
     return `${i ? 'L' : 'M'} ${x.toFixed(1)} ${y.toFixed(1)}`;
   }).join(' ');
 }
 
-function mapBounds(all: any) {
+function mapBounds(all: Coord[]): Bounds {
   return [
     Math.min(...all.map(c => c[0])), Math.min(...all.map(c => c[1])),
     Math.max(...all.map(c => c[0])), Math.max(...all.map(c => c[1])),
@@ -119,20 +120,20 @@ function mapBounds(all: any) {
    宽度固定 → 页面布局一致；高度按内容宽高比计算，但钳在 [minH,maxH] 区间
    （画布比例 4:3 ~ 1:1）。超出区间的极端路线，由 makeProj 扩展可见窗口
    用路网补空白，不迁就极端形状。 */
-function contentRatio(bounds: any) {
+function contentRatio(bounds: Bounds) {
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const kx = Math.cos(((minLat + maxLat) / 2) * Math.PI / 180);
   return Math.max((maxLon - minLon) * kx, 1e-6) / Math.max(maxLat - minLat, 1e-6);
 }
-function adaptiveH(W: any, bounds: any, PAD: any, minH: any, maxH: any) {
+function adaptiveH(W: number, bounds: Bounds, PAD: number, minH: number, maxH: number) {
   const perfect = (W - PAD * 2) / contentRatio(bounds) + PAD * 2; // 内容正好填满画布所需高度
   return Math.round(Math.max(minH, Math.min(perfect, maxH)));
 }
 /* 文本宽度估算：CJK≈size、emoji≈1.1×size、ASCII≈0.55×size（标签碰撞用） */
-function textWidth(txt: any, size: any) {
+function textWidth(txt: string, size: number) {
   let w = 0;
   for (const ch of txt) {
-    const c = ch.codePointAt(0);
+    const c = ch.codePointAt(0)!;
     if (c >= 0x2e80 && c < 0xa000) w += size;
     else if (c >= 0x1f000) w += size * 1.1;
     else w += size * 0.55;
@@ -142,38 +143,38 @@ function textWidth(txt: any, size: any) {
 
 /* ---------- 标签碰撞避免（PRD-003：修复元素互相覆盖） ---------- */
 function makeLabelPlacer() {
-  const placed = [];
+  const placed: { x: number; y: number; w: number; h: number }[] = [];
   return {
     /* 固定障碍（画布绝对坐标）：信息牌/指北针/起终点圆/地标 pin */
-    obstacle(x, y, w, h) { placed.push({ x, y, w, h }); },
-    fit(x, y, w, h) {
+    obstacle(x: number, y: number, w: number, h: number) { placed.push({ x, y, w, h }); },
+    fit(x: number, y: number, w: number, h: number) {
       for (const p of placed) {
         if (Math.abs(p.x - x) < (p.w + w) / 2 + 6 && Math.abs(p.y - y) < (p.h + h) / 2 + 4) return false;
       }
       return true;
     },
-    add(x, y, w, h) { placed.push({ x, y, w, h }); },
+    add(x: number, y: number, w: number, h: number) { placed.push({ x, y, w, h }); },
   };
 }
 /* 就近放标签：按候选偏移由近到远找第一个不重叠位置，返回 { html, dy }（选中偏移）。
    传 W/H 时额外限制 label 不出画布；无候选返回 null。 */
-function placeLabelAt(placer: any, x: any, y: any, w: any, h: any, render: any, cands?: any, W?: any, H?: any) {
+function placeLabelAt(placer: LabelPlacer, x: number, y: number, w: number, h: number, render: (dy: number) => string, cands?: number[], W?: number, H?: number) {
   for (const dy of (cands || [0, 18, -18, 36, -36])) {
-    if (W) { const bx = x - w / 2, by = y + dy - h / 2; if (bx < 2 || bx + w > W - 2 || by < 2 || by + h > H - 2) continue; }
+    if (W !== undefined && H !== undefined) { const bx = x - w / 2, by = y + dy - h / 2; if (bx < 2 || bx + w > W - 2 || by < 2 || by + h > H - 2) continue; }
     if (placer.fit(x, y + dy, w, h)) { placer.add(x, y + dy, w, h); return { html: render(dy), dy }; }
   }
   return null;
 }
 /* 在候选偏移里找不重叠的位置渲染；都重叠则跳过（返回 ''）。cands 可自定义候选偏移 */
-function placeLabel(placer: any, x: any, y: any, w: any, h: any, render: any, cands?: any) {
+function placeLabel(placer: LabelPlacer, x: number, y: number, w: number, h: number, render: (dy: number) => string, cands?: number[]) {
   const r = placeLabelAt(placer, x, y, w, h, render, cands);
   return r ? r.html : '';
 }
 /* 徒步点位名称/事项块放置：下/上/更下/更上四档候选，避开信息牌/指北针/其他点位；保底不丢名字 */
-function placeHikeBlock(placer: any, x: any, y: any, name: any, act: any, preferAbove: any) {
+function placeHikeBlock(placer: LabelPlacer, x: number, y: number, name: string, act: string, preferAbove: boolean) {
   const nW = textWidth(name, 14), aW = act ? textWidth(act, 12) : 0;
   const w = Math.max(nW, aW) + 4;
-  const mk = (dyN, dyA) => {
+  const mk = (dyN: number, dyA: number | null) => {
     const top = dyN - 13, bot = dyA ? dyA + 3 : dyN + 4;
     return { dyN, dyA, cy: (top + bot) / 2, h: bot - top };
   };
@@ -189,7 +190,7 @@ function placeHikeBlock(placer: any, x: any, y: any, name: any, act: any, prefer
 }
 
 /* 把圆从矩形中推出（返回调整后的圆心）；用于地标 pin 避开起终点/信息牌/指北针 */
-function pushCircleFromRect(cx: any, cy: any, r: any, rx: any, ry: any, rw: any, rh: any, pad: any) {
+function pushCircleFromRect(cx: number, cy: number, r: number, rx: number, ry: number, rw: number, rh: number, pad: number): Coord {
   const nx = Math.max(rx, Math.min(cx, rx + rw));
   const ny = Math.max(ry, Math.min(cy, ry + rh));
   const dx = cx - nx, dy = cy - ny;
@@ -207,7 +208,7 @@ function pushCircleFromRect(cx: any, cy: any, r: any, rx: any, ry: any, rw: any,
   return [cx + dx / d * push, cy + dy / d * push];
 }
 /* 圆是否与矩形（含 pad 间距）相交 */
-function circleHitsRect(cx: any, cy: any, r: any, rx: any, ry: any, rw: any, rh: any, pad: any) {
+function circleHitsRect(cx: number, cy: number, r: number, rx: number, ry: number, rw: number, rh: number, pad: number) {
   const nx = Math.max(rx, Math.min(cx, rx + rw));
   const ny = Math.max(ry, Math.min(cy, ry + rh));
   const dx = cx - nx, dy = cy - ny;
@@ -215,17 +216,18 @@ function circleHitsRect(cx: any, cy: any, r: any, rx: any, ry: any, rw: any, rh:
 }
 /* 把圆从一组矩形中整体推出：逐个矩形尝试「上下左右 + 四角 + 沿最近边」逃逸方向，
    选位移最小且能清出全部矩形的位置。避免顺序推挤在多个障碍间来回振荡。 */
-function pushOutOfRects(cx: any, cy: any, r: any, rects: any, pad: any) {
+function pushOutOfRects(cx: number, cy: number, r: number, rects: Rect[], pad: number): Coord {
   if (!rects.some(o => circleHitsRect(cx, cy, r, o[0], o[1], o[2], o[3], pad))) return [cx, cy];
-  const cands = [];
-  const clear = (x, y) => !rects.some(o => circleHitsRect(x, y, r, o[0], o[1], o[2], o[3], pad));
+  const cands: Coord[] = [];
+  const clear = (x: number, y: number) => !rects.some(o => circleHitsRect(x, y, r, o[0], o[1], o[2], o[3], pad));
   for (const o of rects) {
     const [rx, ry, rw, rh] = o;
     cands.push([rx - r - pad, cy], [rx + rw + r + pad, cy], [cx, ry - r - pad], [cx, ry + rh + r + pad]);
     cands.push([rx - r - pad, ry - r - pad], [rx + rw + r + pad, ry - r - pad], [rx - r - pad, ry + rh + r + pad], [rx + rw + r + pad, ry + rh + r + pad]);
     cands.push(pushCircleFromRect(cx, cy, r, rx, ry, rw, rh, pad));
   }
-  let best = null, bestD = Infinity;
+  let best: Coord | null = null;
+  let bestD = Infinity;
   for (const c of cands) {
     if (!clear(c[0], c[1])) continue;
     const d = Math.hypot(c[0] - cx, c[1] - cy);
@@ -236,7 +238,7 @@ function pushOutOfRects(cx: any, cy: any, r: any, rects: any, pad: any) {
 
 /* 点集扩散：迭代推开距离小于 minD 的点对（确定性），用于挤在一起的 marker/点位
    fixed=Set 中的索引不移动（如家的锚点） */
-function spreadPoints(pts: any, minD: any, iters?: any, fixed?: any) {
+function spreadPoints(pts: Coord[], minD: number, iters?: number, fixed?: Set<number>) {
   fixed = fixed || new Set();
   for (let k = 0; k < (iters || 10); k++) {
     let moved = false;
@@ -259,15 +261,15 @@ function spreadPoints(pts: any, minD: any, iters?: any, fixed?: any) {
 
 /* ---------- 路网背景：OSM 主要道路（network.js，GCJ-02），分级渲染
    simple=true 时单遍淡渲染（足迹大地图用，省一半体积） ---------- */
-function networkLayer(bounds: any, proj: any, id: any, simple?: any) {
-  if (typeof NETWORK === 'undefined' || !NETWORK || !NETWORK.ways) return '';
+function networkLayer(bounds: Bounds, proj: Projection, id: string, network?: MapNetwork | null, simple?: boolean) {
+  if (!network?.ways) return '';
   const [minLon, minLat, maxLon, maxLat] = bounds;
   const padLon = (maxLon - minLon) * 0.15, padLat = (maxLat - minLat) * 0.15;
   const x0 = minLon - padLon, x1 = maxLon + padLon, y0 = minLat - padLat, y1 = maxLat + padLat;
   const ST = MAP_C.road;
-  const SIMPLE = { motorway: ['#E9D9AC', 1.8], trunk: ['#E5D9BA', 1.5] }; // 足迹图只保留高速+干道
+  const SIMPLE: Record<string, [string, number] | undefined> = { motorway: ['#E9D9AC', 1.8], trunk: ['#E5D9BA', 1.5] }; // 足迹图只保留高速+干道
   let casing = '', fill = '';
-  for (const w of NETWORK.ways) {
+  for (const w of network.ways) {
     let inside = false;
     for (const p of w.polyline) {
       if (p[0] >= x0 && p[0] <= x1 && p[1] >= y0 && p[1] <= y1) { inside = true; break; }
@@ -280,7 +282,7 @@ function networkLayer(bounds: any, proj: any, id: any, simple?: any) {
       fill += `<path d="${d}" fill="none" stroke="${s[0]}" stroke-width="${s[1]}" stroke-opacity="0.55" stroke-linecap="round" stroke-linejoin="round"/>`;
       continue;
     }
-    const s = ST[w.cls] || ST.primary;
+    const s = ST[w.cls as keyof typeof ST] || ST.primary;
     if (s.casingW > 0) casing += `<path d="${d}" fill="none" stroke="${s.casing}" stroke-width="${s.casingW}" stroke-linecap="round" stroke-linejoin="round"/>`;
     fill += `<path d="${d}" fill="none" stroke="${s.fill}" stroke-width="${s.fillW}" stroke-opacity="${s.opacity}" stroke-linecap="round" stroke-linejoin="round"/>`;
   }
@@ -288,7 +290,7 @@ function networkLayer(bounds: any, proj: any, id: any, simple?: any) {
 }
 
 /* ---------- 统一标记：白色圆底 + 强调色环 + emoji + 光晕文字 ---------- */
-function pinMarker(x: any, y: any, emoji: any, _ring: any, id: any) {
+function pinMarker(x: number, y: number, emoji: string, _ring: string, id: string) {
   return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})" filter="url(#sh-${id})">
     <circle r="13" fill="#FFFFFF" stroke="${_ring}" stroke-width="2.5"/>
     <text y="5" text-anchor="middle" font-size="13">${emoji}</text>
@@ -296,7 +298,7 @@ function pinMarker(x: any, y: any, emoji: any, _ring: any, id: any) {
 }
 
 /* ---------- 指北针 ---------- */
-function compass(x: any, y: any, id: any) {
+function compass(x: number, y: number, id: string) {
   return `<g transform="translate(${x},${y})" filter="url(#sh-${id})">
     <circle r="20" fill="#FFFFFF" stroke="${MAP_C.line}" stroke-width="1.5"/>
     <path d="M0 -12 L 5 5 L 0 2 L -5 5 Z" fill="${MAP_C.route}"/>
@@ -306,7 +308,7 @@ function compass(x: any, y: any, id: any) {
 }
 
 /* ---------- 信息牌（里程/标题）；id 传入时才加软阴影 ---------- */
-function infoCard(x: any, y: any, text: any, accent: any, w: any, id?: any) {
+function infoCard(x: number, y: number, text: string, accent: string, w: number, id?: string) {
   const flt = id ? ` filter="url(#sh-${id})"` : '';
   return `<g transform="translate(${x},${y})"${flt}>
     <rect x="${-w / 2}" y="-24" width="${w}" height="44" rx="14" fill="#FFFFFF" opacity="0.95" stroke="${accent}" stroke-width="2"/>
@@ -315,7 +317,7 @@ function infoCard(x: any, y: any, text: any, accent: any, w: any, id?: any) {
 }
 
 /* ---------- 真实地理：自驾路线图 ---------- */
-function realDriveMap(d: any, id: any) {
+function realDriveMap(d: DriveRoute, id: string, network?: MapNetwork | null) {
   const W = 800, PAD = 82;
   const all = [...d.polyline, d.from.coord, d.to.coord, ...(d.landmarks || []).map(l => l.coord)];
   const bounds = mapBounds(all);
@@ -349,12 +351,12 @@ function realDriveMap(d: any, id: any) {
   /* 地标：pin 避开起终点（圆 + 名称 label 合并为一个整体）、信息牌、指北针。
      合并避免「被终点圆推下、又被终点名推回」的振荡；随后注册为障碍 */
   const lmks = (d.landmarks || []).map(l => ({ icon: l.icon, name: l.name, p: proj(l.coord) }));
-  const startRegion = [
+  const startRegion: Rect = [
     Math.min(sx - 17, sx - startW / 2), Math.min(sy - 17, startY - startH / 2),
     Math.max(sx + 17, sx + startW / 2) - Math.min(sx - 17, sx - startW / 2),
     Math.max(sy + 17, startY + startH / 2) - Math.min(sy - 17, startY - startH / 2),
   ];
-  const endRegion = [
+  const endRegion: Rect = [
     Math.min(ex - 17, ex - endW / 2), Math.min(ey - 17, endY - endH / 2),
     Math.max(ex + 17, ex + endW / 2) - Math.min(ex - 17, ex - endW / 2),
     Math.max(ey + 17, endY + endH / 2) - Math.min(ey - 17, endY - endH / 2),
@@ -370,7 +372,7 @@ function realDriveMap(d: any, id: any) {
     if (!r.name || !r.name.trim()) continue;
     const [x, y] = proj(r.point);
     const w = r.name.length * 11 + 14, h = 22;
-    const tag = dy => `
+    const tag = (dy: number) => `
     <g transform="translate(${x.toFixed(1)},${(y + dy).toFixed(1)})">
       <rect x="${(-w / 2).toFixed(1)}" y="-11" width="${w}" height="22" rx="11" fill="${MAP_C.pill}" opacity="0.92" stroke="${MAP_C.pillEdge}" stroke-width="1"/>
       <text y="4" text-anchor="middle" font-size="11.5" font-weight="600" fill="${MAP_C.text}">${r.name}</text>
@@ -396,7 +398,7 @@ function realDriveMap(d: any, id: any) {
   <rect width="${W}" height="${H}" rx="20" fill="url(#vig-${id})"/>
   ${graticule(W, H, proj, win)}
   <!-- 路网背景（OSM 主要道路，分级示意，铺满全幅） -->
-  ${networkLayer(win, proj, id)}
+  ${networkLayer(win, proj, id, network)}
   <!-- 真实路线：白描边 + 烧砖橙主路（细线条，避免遮挡） -->
   <path d="${route}" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="${route}" fill="none" stroke="${MAP_C.route}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -427,7 +429,7 @@ function realDriveMap(d: any, id: any) {
 }
 
 /* ---------- 真实地理：徒步/活动路线图 ---------- */
-function realHikeMap(h: any, id: any) {
+function realHikeMap(h: HikeRoute, id: string) {
   const W = 800, PAD = 85;
   const coords = h.spots.map(s => s.coord).concat(h.path || []);
   const bounds = mapBounds(coords);
@@ -495,7 +497,7 @@ function realHikeMap(h: any, id: any) {
 /* ============================================================
    回退方案：无 routes.js 数据时的卡通示意图（视觉与新色板对齐）
    ============================================================ */
-function schematicDriveMap(drive: any) {
+function schematicDriveMap(drive: DriveSummary) {
   const path = 'M 90 270 C 220 180, 300 300, 430 220 S 640 130, 710 110';
   return `
 <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="自驾路线示意图" style="font-family:system-ui,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif">
@@ -530,7 +532,7 @@ function schematicDriveMap(drive: any) {
 </svg>`;
 }
 
-function schematicHikeMap(hike: any) {
+function schematicHikeMap(hike: HikeSummary) {
   const pts = hike.waypoints;
   const n = pts.length;
   const coords = pts.map((_, i) => {
@@ -573,37 +575,33 @@ function schematicHikeMap(hike: any) {
 }
 
 /* ---------- 对外接口：优先真实数据，回退示意图 ---------- */
-function routeData(planId: any) {
-  return (typeof ROUTES !== 'undefined' && ROUTES[planId]) || null;
-}
-
-export function driveMapSVG(plan: Record<string, unknown>): string {
-  const r = routeData(plan.id);
-  if (r && r.drive && r.drive.polyline && r.drive.polyline.length >= 2) return realDriveMap(r.drive, 'drv');
+export function driveMapSVG(plan: { id: string; drive: DriveSummary }, data: MapData = {}): string {
+  const r = data.routes?.[plan.id];
+  if (r?.drive && r.drive.polyline.length >= 2) return realDriveMap(r.drive, 'drv', data.network);
   return schematicDriveMap(plan.drive);
 }
 
-export function hikeMapSVG(plan: Record<string, unknown>): string {
-  const r = routeData(plan.id);
-  if (r && r.hike && r.hike.spots && r.hike.spots.length) return realHikeMap(r.hike, 'hik');
-  if (!plan.hike) return '';
+export function hikeMapSVG(plan: { id: string; hike?: HikeSummary | null }, data: MapData = {}): string {
+  const r = data.routes?.[plan.id];
+  if (r?.hike && r.hike.spots.length) return realHikeMap(r.hike, 'hik');
+  if (!plan.hike?.waypoints.length) return '';
   return schematicHikeMap(plan.hike);
 }
 
 /* ---------- 足迹大地图（PRD-002 §四）：全部目的地的真实坐标总览 ---------- */
-export function footprintMapSVG(doneIds: string[]): string {
-  if (typeof ROUTES === 'undefined' || typeof PLANS === 'undefined') return '';
-  const done = new Set(doneIds || []);
-  const pts = [];
-  let home = null;
-  for (const p of PLANS) {
-    const r = ROUTES[p.id];
-    if (!r || !r.drive || !r.drive.to || !r.drive.to.coord) continue;
-    if (!home && r.drive.from && r.drive.from.coord) home = r.drive.from.coord;
-    /* 同城多点去重（如多次白河湾）：坐标近似则合并，已打卡状态取或 */
-    const near = pts.find(q => Math.hypot(q.coord[0] - r.drive.to.coord[0], q.coord[1] - r.drive.to.coord[1]) < 0.01);
+export function footprintMapSVG(doneIds: string[], data: MapData = {}): string {
+  const done = new Set(doneIds);
+  const pts: (FootprintPlan & { coord: Coord; done: boolean })[] = [];
+  let home: Coord | null = null;
+  for (const p of data.plans || []) {
+    const r = data.routes?.[p.id];
+    if (!r?.drive) continue;
+    const drive = r.drive;
+    if (!home) home = drive.from.coord;
+    /* 同城多点去重，已打卡状态取或 */
+    const near = pts.find(q => Math.hypot(q.coord[0] - drive.to.coord[0], q.coord[1] - drive.to.coord[1]) < 0.01);
     if (near) { near.done = near.done || done.has(p.id); continue; }
-    pts.push({ coord: r.drive.to.coord, name: p.location, title: p.title, date: p.date, done: done.has(p.id), archived: !!p.archived });
+    pts.push({ ...p, coord: drive.to.coord, done: done.has(p.id) });
   }
   if (!pts.length || !home) return '';
 
@@ -615,7 +613,7 @@ export function footprintMapSVG(doneIds: string[]): string {
 
   const [hx, hy] = proj(home);
   /* 目的地：把「家的锚点」作为固定点一起扩散，保证 marker 既彼此分开也不压住家 */
-  const allPts = [[hx, hy], ...pts.map(p => {
+  const allPts: Coord[] = [[hx, hy], ...pts.map((p): Coord => {
     let [x, y] = proj(p.coord);
     if (y > H - 46) y = H - 46;
     return [Math.max(20, Math.min(W - 20, x)), Math.max(20, y)];
@@ -645,7 +643,7 @@ export function footprintMapSVG(doneIds: string[]): string {
     <rect width="${W}" height="${H}" rx="18" fill="${MAP_C.paper}"/>
     <rect width="${W}" height="${H}" rx="18" fill="url(#vig-fp)"/>
     ${graticule(W, H, proj, win)}
-    ${networkLayer(win, proj, 'fp', true)}
+    ${networkLayer(win, proj, 'fp', data.network, true)}
     <g filter="url(#sh-fp)"><title>家</title><circle cx="${hx.toFixed(1)}" cy="${hy.toFixed(1)}" r="15" fill="#FFFFFF" stroke="${MAP_C.accent}" stroke-width="3"/><text x="${hx.toFixed(1)}" y="${(hy + 6).toFixed(1)}" text-anchor="middle" font-size="16">🏠</text></g>
     ${markers}
     ${legend}

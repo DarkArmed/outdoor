@@ -366,7 +366,7 @@ export function sceneSVG(theme: string, mom = false): string {
 /* ============================================================
    活动小图（行程时间轴用）：48×48 圆形徽章 + 关键词自动匹配
    ============================================================ */
-function aiBadge(color, inner) {
+function aiBadge(color: string, inner: string) {
   return `<circle cx="24" cy="24" r="22" fill="#fff" stroke="${color}" stroke-width="3.5"/>${inner}`;
 }
 
@@ -530,7 +530,7 @@ const ACT_ICONS = {
 };
 
 /* 关键词 → 活动小图（按顺序首个命中；越具体越靠前） */
-const ACT_MATCH: [string, RegExp][] = [
+const ACT_MATCH: [keyof typeof ACT_ICONS, RegExp][] = [
   ['sunrise', /日出|自然醒/],
   ['sleep',   /睡觉|睡前|入睡|晚安/],
   ['stars',   /星星|星空/],

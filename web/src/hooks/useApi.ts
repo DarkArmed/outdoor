@@ -1,25 +1,26 @@
 import useSWR from 'swr'
-import { apiClient } from '@/api/client'
-import type { PlanOut, ProfileOut, TripDetailOut } from '@/api/types'
-
-const fetcher = (url: string) => apiClient.get(url).then((res) => res.data)
+import * as api from '@/api/client'
+import { useAuth } from '@/auth/AuthContext'
 
 export function usePlans(archived?: boolean) {
-  return useSWR<PlanOut[]>(['/plans', archived], () => fetcher('/plans' + (archived !== undefined ? `?archived=${archived}` : '')))
+  return useSWR(['/plans', archived], () => api.fetchPlans(archived))
 }
 
 export function usePlan(id?: string) {
-  return useSWR<PlanOut>(id ? `/plans/${id}` : null, fetcher)
+  return useSWR(id ? ['/plans', id] : null, () => api.fetchPlan(id!))
 }
 
 export function useProfile() {
-  return useSWR<ProfileOut>('/profile', fetcher)
+  const { user } = useAuth()
+  return useSWR(user ? ['/profile', user.id] : null, api.fetchProfile)
 }
 
 export function useTrips() {
-  return useSWR<TripDetailOut[]>('/trips', fetcher)
+  const { user } = useAuth()
+  return useSWR(user ? ['/trips', user.id] : null, api.fetchTrips)
 }
 
 export function useTrip(id?: number) {
-  return useSWR<TripDetailOut>(id ? `/trips/${id}` : null, fetcher)
+  const { user } = useAuth()
+  return useSWR(user && id ? ['/trips', user.id, id] : null, () => api.fetchTrip(id!))
 }

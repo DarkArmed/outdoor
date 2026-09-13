@@ -63,6 +63,23 @@ section[id] {
 .badge.type-D { background: var(--color-type-d); color: var(--color-type-d-text); }
 .badge.type-E { background: var(--color-type-e); color: var(--color-type-e-text); }
 .badge-mom { background: #ffd9e4; color: #b03060; }
+.badge.archived { background: #e2e8f0; color: #4a5568; }
+.art svg { display: block; width: 100%; height: auto; }
+
+.badge-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  width: min(520px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  color: var(--color-ink);
+  box-shadow: -8px 0 30px rgb(0 0 0 / 15%);
+}
+.badge-drawer::backdrop { background: rgb(0 0 0 / 35%); }
 
 #root {
   min-height: 100svh;

@@ -4,14 +4,15 @@ import { sceneSVG } from '@/svg/scenes'
 
 interface PlanCardProps {
   plan: PlanOut
+  fluid?: boolean
 }
 
-export function PlanCard({ plan }: PlanCardProps) {
+export function PlanCard({ plan, fluid = false }: PlanCardProps) {
   const typeClass = `type-${plan.type.charAt(0)}`
   return (
     <Link
       to={`/plan/${plan.id}`}
-      className="block bg-card rounded-[20px] overflow-hidden shadow-[0_4px_0_rgba(0,0,0,0.10)] hover:-translate-y-1 hover:rotate-[-1deg] hover:border-sun transition border-[3px] border-transparent min-w-[260px] w-[260px]"
+      className={`block bg-card rounded-[20px] overflow-hidden shadow-[0_4px_0_rgba(0,0,0,0.10)] hover:-translate-y-1 hover:rotate-[-1deg] hover:border-sun transition border-[3px] border-transparent ${fluid ? 'w-full min-w-0' : 'min-w-[260px] w-[260px]'}`}
     >
       <div
         className="art"
@@ -25,6 +26,7 @@ export function PlanCard({ plan }: PlanCardProps) {
           <span className="badge">{plan.location}</span>
           <span className="badge">{plan.drive?.time}</span>
           {plan.mom && <span className="badge badge-mom">👩 妈妈同行</span>}
+          {plan.archived && <span className="badge archived">备用</span>}
         </div>
       </div>
     </Link>

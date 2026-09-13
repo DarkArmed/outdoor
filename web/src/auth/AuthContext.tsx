@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { SWRConfig } from 'swr'
 import * as api from '@/api/client'
 import type { UserOut } from '@/api/types'
 
@@ -12,33 +13,51 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
+const sessionCache = { provider: () => new Map() }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserOut | null>(null)
-  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
-  const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'))
+  const [loading, setLoading] = useState(Boolean(token))
+  const revision = useRef(0)
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false)
-      return
+    const sessionRevision = revision
+    const current = ++sessionRevision.current
+    if (localStorage.getItem('token')) {
+      api.fetchMe()
+        .then((data) => { if (sessionRevision.current === current) setUser(data) })
+        .catch(() => {
+          if (sessionRevision.current !== current) return
+          localStorage.removeItem('token')
+          setToken(null)
+        })
+        .finally(() => { if (sessionRevision.current === current) setLoading(false) })
     }
-    api
-      .fetchMe()
-      .then((data) => setUser(data as UserOut))
-      .catch(() => {
-        localStorage.removeItem('token')
-        setToken(null)
-      })
-      .finally(() => setLoading(false))
-  }, [token])
+    return () => { sessionRevision.current++ }
+  }, [])
 
   const login = async (email: string, password: string) => {
-    const data = await api.login(email, password)
-    localStorage.setItem('token', data.access_token)
-    setToken(data.access_token)
-    const me = await api.fetchMe()
-    setUser(me as UserOut)
+    const current = ++revision.current
+    setLoading(true)
+    try {
+      const data = await api.login(email, password)
+      if (revision.current !== current) return
+      localStorage.setItem('token', data.access_token)
+      const me = await api.fetchMe()
+      if (revision.current !== current) return
+      setToken(data.access_token)
+      setUser(me)
+    } catch (error) {
+      if (revision.current === current) {
+        localStorage.removeItem('token')
+        setToken(null)
+        setUser(null)
+      }
+      throw error
+    } finally {
+      if (revision.current === current) setLoading(false)
+    }
   }
 
   const register = async (email: string, password: string) => {
@@ -47,14 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    revision.current++
     localStorage.removeItem('token')
     setToken(null)
     setUser(null)
+    setLoading(false)
   }
 
   return (
     <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
-      {children}
+      <SWRConfig key={token ?? 'anonymous'} value={sessionCache}>{children}</SWRConfig>
     </AuthContext.Provider>
   )
 }
