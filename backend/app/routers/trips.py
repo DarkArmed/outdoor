@@ -26,7 +26,7 @@ def list_trips(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return db.query(Trip).filter(Trip.user_id == current_user.id).offset(skip).limit(limit).all()
+    return db.query(Trip).filter(Trip.user_id == current_user.id).order_by(Trip.id).offset(skip).limit(limit).all()
 
 
 @router.post("", response_model=TripDetailOut, status_code=201)
@@ -39,27 +39,7 @@ def create_trip(
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
 
-    snapshot = {
-        "id": plan.id,
-        "title": plan.title,
-        "date": plan.date,
-        "type": plan.type,
-        "theme": plan.theme,
-        "emoji": plan.emoji,
-        "location": plan.location,
-        "mom": plan.mom,
-        "goal": plan.goal,
-        "tips": plan.tips,
-        "itinerary": plan.itinerary,
-        "day_names": plan.day_names,
-        "drive": plan.drive,
-        "hike": plan.hike,
-        "gear": plan.gear,
-        "safety": plan.safety,
-        "review": plan.review,
-        "badge": plan.badge,
-        "tasks": plan.tasks,
-    }
+    snapshot = snapshot_plan(plan)
     trip = Trip(
         user_id=current_user.id,
         plan_id=plan.id,
@@ -120,3 +100,27 @@ def delete_trip(
     db.delete(trip)
     db.commit()
     return None
+
+
+def snapshot_plan(plan: Plan) -> dict[str, Any]:
+    return {
+        "id": plan.id,
+        "title": plan.title,
+        "date": plan.date,
+        "type": plan.type,
+        "theme": plan.theme,
+        "emoji": plan.emoji,
+        "location": plan.location,
+        "mom": plan.mom,
+        "goal": plan.goal,
+        "tips": plan.tips,
+        "itinerary": plan.itinerary,
+        "day_names": plan.day_names,
+        "drive": plan.drive,
+        "hike": plan.hike,
+        "gear": plan.gear,
+        "safety": plan.safety,
+        "review": plan.review,
+        "badge": plan.badge,
+        "tasks": plan.tasks,
+    }

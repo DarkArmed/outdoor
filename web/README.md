@@ -1,6 +1,6 @@
-# 户外大冒险 · 前端核心模块（T2）
+# 户外大冒险 · React 前端
 
-Vite + React 19 + TypeScript strict + Tailwind CSS v4。T2 提供模块和路由骨架，完整页面与业务流程在 T3 实现。
+Vite + React 19 + TypeScript strict + Tailwind CSS v4。已完成页面、用户系统、状态持久化与旧记录迁移。
 
 ## 本地命令
 
@@ -16,7 +16,7 @@ npm run test:e2e -- --workers=2
 ```
 
 开发服务默认端口 5173；`/api` 代理到 `http://localhost:8000`。可通过 `VITE_API_BASE_URL` 覆盖 API 地址。
-Playwright 使用独立端口 5175，避免复用其他 worktree 的服务。首次使用需要 `npx playwright install chromium`。
+Playwright 使用独立端口 5175 和 8015，自动启动临时 SQLite 后端；Python 需安装后端依赖。首次使用需要 `npx playwright install chromium`。
 `e2e/components.html` 仅供浏览器测试，不是应用页面，也不是生产构建入口。
 
 后端启动后，执行 `npm run generate:api` 更新 `src/api/generated/api.ts`。
@@ -44,8 +44,10 @@ const hike = hikeMapSVG({ id: 'example' }, data)
 const footprint = footprintMapSVG([], data)
 ```
 
-传入真实路线时按原算法渲染；缺少路线时回退示意图。SVG 测试直接加载旧版 `site/js/maps.js` / `scenes.js`，验证输出一致。
+传入真实路线时按原算法渲染；缺少路线时回退示意图。SVG 测试直接加载旧版 `src/svg/__fixtures__/maps.js` / `scenes.js`，验证输出一致。
 
-## T3 接入边界
+## 页面与运行说明
 
-`/`、`/plan/:id`、`/login` 当前只有占位标题。完整页面、登录/注册表单、画像、我的出行、清单后端持久化及打卡/徽章解锁留在 T3。
+`/` 首页，`/plan/:id?trip=<id>` 方案与个人快照，`/login` / `/register` 认证，`/profile` 家庭画像与旧记录导入，`/my-trips` 个人出行管理。
+
+完整运行和迁移步骤见 [操作手册](../docs/tech/操作手册.md)，架构见 [网站](../docs/tech/网站.md)。

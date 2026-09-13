@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models import BadgeUnlock, Checkin, GearState, TaskState, Trip, User
+from app.models import BadgeUnlock, Checkin, GearState, TaskState, Trip, User, Milestone
 from app.schemas import (
     BadgeUnlockOut,
     CheckinOut,
@@ -106,9 +106,13 @@ def checkin(
     db: Session = Depends(get_db),
 ):
     trip = _get_trip(trip_id, current_user, db)
-    checkin = Checkin(trip_id=trip_id)
-    db.add(checkin)
+    checkin = db.query(Checkin).filter(Checkin.trip_id == trip_id).first()
+    if not checkin:
+        checkin = Checkin(trip_id=trip_id)
+        db.add(checkin)
     trip.status = "done"
+    db.flush()
+    award_badges(current_user.id, db)
     db.commit()
     db.refresh(checkin)
     return checkin
@@ -134,3 +138,25 @@ def unlock_badge(
     db.commit()
     db.refresh(unlock)
     return unlock
+
+
+def award_badges(user_id: int, db: Session) -> None:
+    """Same plan/milestone rules as the retired site; persist awards atomically."""
+    done = {}
+    for trip in db.query(Trip).filter(Trip.user_id == user_id, Trip.status == "done").all():
+        done[trip.plan_id] = {**trip.snapshot, **(trip.overrides or {})}
+    awards = {pid for pid, content in done.items() if content.get("badge")}
+    for milestone in db.query(Milestone).all():
+        rule = milestone.rule
+        matched = False
+        if rule.get("firstType"):
+            matched = any(str(p.get("type", "")).startswith(rule["firstType"]) for p in done.values())
+        if rule.get("count"):
+            matched = len(done) >= rule["count"]
+        if rule.get("minKm"):
+            matched = any((p.get("drive", {}).get("km") or 0) >= rule["minKm"] for p in done.values())
+        if matched:
+            awards.add(milestone.id)
+    existing = {b.badge_id for b in db.query(BadgeUnlock).filter(BadgeUnlock.user_id == user_id).all()}
+    for badge_id in awards - existing:
+        db.add(BadgeUnlock(user_id=user_id, badge_id=badge_id))

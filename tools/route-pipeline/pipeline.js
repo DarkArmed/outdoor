@@ -1,7 +1,7 @@
 /* pipeline.js — 路线流水线主流程
  * 用法: node pipeline.js [planId]
- * 输入: site/js/data/*.js 中的 PLANS + config.json（amapKey）+ ../../config/profile.json（家位置/城市）
- * 输出: site/js/data/routes.js（var ROUTES = {...}）
+ * 输入: data/*.js 中的 PLANS + config.json（amapKey）+ ../../config/profile.json（家位置/城市）
+ * 输出: data/routes.js（var ROUTES = {...}）
  */
 const fs = require('fs');
 const path = require('path');
@@ -11,7 +11,7 @@ const { fetchNetwork } = require('./overpass');
 
 /* 路网抓取区域：覆盖全部目的地（北京城区 → 丰宁坝上） */
 const NETWORK_BBOX = [39.6, 115.6, 41.9, 117.5]; // [minLat, minLon, maxLat, maxLon]
-const NETWORK_FILE = path.join(__dirname, '..', '..', 'site', 'js', 'data', 'network.js');
+const NETWORK_FILE = path.join(__dirname, '..', '..', 'data', 'network.js');
 
 /** 抓取并写出共享路网文件；失败时保留已有文件，不阻断主流程 */
 async function buildNetwork() {
@@ -32,7 +32,7 @@ async function buildNetwork() {
 }
 
 const ROOT = path.join(__dirname, '..', '..');
-const DATA_DIR = path.join(ROOT, 'site', 'js', 'data');
+const DATA_DIR = path.join(ROOT, 'data');
 const OUT_FILE = path.join(DATA_DIR, 'routes.js');
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 const PROFILE_FILE = path.join(ROOT, 'config', 'profile.json');
