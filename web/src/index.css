@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sky: #7ED6FF;
+  --color-sky-deep: #4FC3F7;
+  --color-sun: #FFD93D;
+  --color-grass: #7CDB6E;
+  --color-grass-dk: #4CAF50;
+  --color-coral: #FF6B6B;
+  --color-orange: #FFA94D;
+  --color-purple: #A78BFA;
+  --color-pink: #FF8FAB;
+  --color-ink: #2D3748;
+  --color-paper: #FFFDF5;
+  --color-card: #FFFFFF;
+  --color-type-a: #B2F5EA;
+  --color-type-a-text: #234E52;
+  --color-type-b: #C6F6D5;
+  --color-type-b-text: #22543D;
+  --color-type-c: #FEEBC8;
+  --color-type-c-text: #7B341E;
+  --color-type-d: #E9D8FD;
+  --color-type-d-text: #44337A;
+  --color-type-e: #CDEBFF;
+  --color-type-e-text: #1D4E7E;
+  --color-muted: #718096;
+  --color-safety-bg: #FFF5F5;
+
+  --font-sans: "Microsoft YaHei", "PingFang SC", "Comic Sans MS", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  line-height: 1.7;
+  margin: 0;
+}
+
+section[id] {
+  scroll-margin-top: 16px;
+}
+
+#root {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
