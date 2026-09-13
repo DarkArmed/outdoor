@@ -1,6 +1,6 @@
-import useSWR from 'swr'
+import useSWR, { mutate as globalMutate } from 'swr'
 import { apiClient } from '@/api/client'
-import type { PlanOut, ProfileOut, TripDetailOut } from '@/api/types'
+import type { PlanOut, ProfileOut, TripDetailOut, GearItemState, TaskItemState, BadgeUnlockOut, CheckinOut } from '@/api/types'
 
 const fetcher = (url: string) => apiClient.get(url).then((res) => res.data)
 
@@ -22,4 +22,44 @@ export function useTrips() {
 
 export function useTrip(id?: number) {
   return useSWR<TripDetailOut>(id ? `/trips/${id}` : null, fetcher)
+}
+
+export function useGearStates(tripId?: number) {
+  return useSWR<GearItemState[]>(tripId ? `/trips/${tripId}/gear` : null, fetcher)
+}
+
+export async function updateGearStates(tripId: number, items: { item_idx: number; checked: boolean }[]) {
+  const res = await apiClient.put(`/trips/${tripId}/gear`, { items })
+  await globalMutate(`/trips/${tripId}/gear`)
+  await globalMutate('/trips')
+  return res.data as GearItemState[]
+}
+
+export function useTaskStates(tripId?: number) {
+  return useSWR<TaskItemState[]>(tripId ? `/trips/${tripId}/tasks` : null, fetcher)
+}
+
+export async function updateTaskStates(tripId: number, items: { task_idx: number; checked: boolean }[]) {
+  const res = await apiClient.put(`/trips/${tripId}/tasks`, { items })
+  await globalMutate(`/trips/${tripId}/tasks`)
+  await globalMutate('/trips')
+  return res.data as TaskItemState[]
+}
+
+export async function checkinTrip(tripId: number) {
+  const res = await apiClient.post(`/trips/${tripId}/checkin`)
+  await globalMutate(`/trips/${tripId}`)
+  await globalMutate('/trips')
+  await globalMutate('/me/badges')
+  return res.data as CheckinOut
+}
+
+export function useMyBadges() {
+  return useSWR<BadgeUnlockOut[]>('/me/badges', fetcher)
+}
+
+export async function createTrip(planId: string, plannedDate?: string) {
+  const res = await apiClient.post('/trips', { plan_id: planId, planned_date: plannedDate || null })
+  await globalMutate('/trips')
+  return res.data as TripDetailOut
 }
