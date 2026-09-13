@@ -41,18 +41,18 @@ outdoor/
     └── 采购清单.md          # 分批次采购单（按优先级）
 ```
 
-## 网站（site/）
+## 网站（web/）
 
-- 纯静态、零依赖、离线可用；双击 `site/index.html` 即可打开。
-- **数据驱动**：所有计划数据在 `site/js/data/data-a|b|c|d.js`，每条含主题（theme）、行程、装备、安全、徒步路线关键点（waypoints）。
-- **新增一周计划时**：① `plans/` 生成 Markdown 源文档；② 往 `site/js/data/` 追加一条数据；③ 更新 `00-赛季总览.md` 索引。
-- 插图（`scenes.js`）与路线图（`maps.js`）为程序生成的 SVG：插图按 theme 组合卡通场景，行程时刻由 `actIconSVG` 按文字关键词自动配活动小图；自驾路线图基于真实地理（含 OSM 路网背景），为**指路参考**（非导航用途），页面已注明。
-- 装备勾选状态存浏览器 localStorage（`gear:<planId>:<idx>`）。
-- 冒烟测试：`node tools/smoke-test.js`（mock DOM 验证首页/详情页/地图/图标匹配）。
+- React + Vite + TypeScript，连接 FastAPI；启动见 `docs/tech/操作手册.md`。
+- 公共方案数据在 `data/data-a|b|c|d.js`，种子脚本导入数据库。
+- 用户画像、装备、任务、打卡和徽章通过 API 持久化；浏览器旧记录自动迁移，原始数据保留。
+- 插图与地图在 `web/src/svg/`；地图为指路参考，非导航用途。
+- 测试：`npm --prefix web run test -- --run`、`npm --prefix web run test:e2e`、`python -m pytest`。
+- `site/` 与同步脚本已退役；新方案同时更新 Markdown、`data/` 和赛季索引。
 
 ## 路线流水线（tools/route-pipeline/）
 
-- 作用：把计划变成**真实地理**路线图（高德 API：地理编码 → 驾车/步行规划 → 道路/地标提取 → `site/js/data/routes.js`），另从 OSM 抓主要路网 → `site/js/data/network.js`。
+- 作用：把计划变成**真实地理**路线图（高德 API：地理编码 → 驾车/步行规划 → 道路/地标提取 → `data/routes.js`），另从 OSM 抓主要路网 → `data/network.js`。
 - 配置：`config.json`（仅 amapKey，gitignore）；**家位置/城市读仓库根 `config/profile.json`（用户配置，gitignore）**；运行 `node pipeline.js [planId]`（`--network` 只刷路网）。
 - 计划数据中的地理字段：`drive.landmarks`（沿途地标）、`drive.geoCity`（外地目的地限定城市，防同名 POI）、徒步 waypoints 的 `query`（可地理编码的锚点）/`at`（沿路径比例 0–1）/`act`（活动事项标注）。
 - 注意：高德个人开发者 QPS 低，amap.js 已内置限速重试；新增计划后重跑 pipeline 即可（有缓存，增量快）。Overpass 必须 POST + 自定义 UA，否则 406。
@@ -60,8 +60,8 @@ outdoor/
 
 ## 用户配置（config/profile.json）
 
-- **唯一真实来源**：家位置、出行成员、孩子信息（小名/出生年份/耐力/兴趣/过敏）、出行偏好；gitignore，模板为 `config/profile.example.json`。
-- **改配置后**：跑 `node tools/sync-profile.js` 生成网站用的 `site/js/data/profile.js`；改了家位置还要重跑 pipeline。
+- **流水线与默认账号种子来源**：家位置、出行成员、孩子信息（小名/出生年份/耐力/兴趣/过敏）、出行偏好；gitignore，模板为 `config/profile.example.json`。
+- **改配置后**：仅影响默认画像种子与路线流水线；网页画像在账号内编辑。改路线起点需重跑 pipeline。
 - 代码与计划数据**不得写死**画像信息（计划数据起点统一写「家」）；页面年龄由出生年份自动计算。字段契约见 `docs/tech/数据契约.md`。
 
 ## 用户画像（2026-08-07 确认）

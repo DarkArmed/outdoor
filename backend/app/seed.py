@@ -24,12 +24,11 @@ from app.models import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-SITE_JS = ROOT / "site" / "js"
 CONFIG_PATH = ROOT / "config" / "profile.json"
 
 
-def dump_site_data() -> dict[str, Any]:
-    script = ROOT / "tools" / "dump-site-data.js"
+def dump_data() -> dict[str, Any]:
+    script = ROOT / "tools" / "dump-data.js"
     result = subprocess.run(
         ["node", str(script)],
         cwd=str(ROOT),
@@ -68,7 +67,7 @@ def seed_plans(db: Session, plans: list[dict], routes: dict) -> None:
             itinerary=p.get("itinerary", []),
             day_names=p.get("dayNames", []),
             drive=p.get("drive", {}),
-            hike=p.get("hike", {}),
+            hike=(p.get("hike") or {}),
             gear=p.get("gear", {}),
             safety=p.get("safety", []),
             review=p.get("review", []),
@@ -88,7 +87,7 @@ def seed_plans(db: Session, plans: list[dict], routes: dict) -> None:
                 source=route_data.get("source", ""),
                 generated_at=generated_at,
                 drive=route_data.get("drive", {}),
-                hike=route_data.get("hike", {}),
+                hike=(route_data.get("hike") or {}),
             )
             db.add(route)
     db.commit()
@@ -175,7 +174,7 @@ def seed_default_trips(db: Session, user: User, plans: list[dict]) -> None:
             "itinerary": p.get("itinerary", []),
             "day_names": p.get("dayNames", []),
             "drive": p.get("drive", {}),
-            "hike": p.get("hike", {}),
+            "hike": (p.get("hike") or {}),
             "gear": p.get("gear", {}),
             "safety": p.get("safety", []),
             "review": p.get("review", []),
@@ -198,7 +197,7 @@ def seed_all() -> None:
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        data = dump_site_data()
+        data = dump_data()
         profile_data = load_profile()
 
         seed_plans(db, data["plans"], data.get("routes", {}))

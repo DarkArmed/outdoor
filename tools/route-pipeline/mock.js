@@ -5,7 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const OUT = path.join(__dirname, '..', '..', 'site', 'js', 'data', 'routes.js');
+const OUT = path.join(__dirname, '..', '..', 'data', 'routes.js');
 const PROFILE_FILE = path.join(__dirname, '..', '..', 'config', 'profile.json');
 
 /* 家的位置读用户配置；坐标为近似值（仅预览用，正式数据跑 pipeline.js） */

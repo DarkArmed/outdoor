@@ -184,3 +184,10 @@ class BadgeUnlock(Base):
     user = relationship("User", back_populates="badge_unlocks")
 
     __table_args__ = (UniqueConstraint("user_id", "badge_id", name="uix_badge_user_badge"),)
+
+
+class LegacyImport(Base):
+    __tablename__ = "legacy_imports"
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    import_id = Column(String(64), primary_key=True)
+    result = Column(JSON, nullable=False)

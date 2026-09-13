@@ -24,7 +24,7 @@ export function PlanCard({ plan, fluid = false }: PlanCardProps) {
           <span className={`badge ${typeClass}`}>{plan.type}</span>
           <span className="badge">{plan.date}</span>
           <span className="badge">{plan.location}</span>
-          <span className="badge">{plan.drive?.time}</span>
+          <span className="badge">{String(plan.drive?.time ?? '')}</span>
           {plan.mom && <span className="badge badge-mom">👩 妈妈同行</span>}
           {plan.archived && <span className="badge archived">备用</span>}
         </div>

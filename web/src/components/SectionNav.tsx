@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 const SECTIONS = [
   { id: 'goal', label: '目标' },
+  { id: 'tasks', label: '任务' },
   { id: 'itinerary', label: '行程' },
   { id: 'route', label: '路线' },
   { id: 'gear', label: '装备' },

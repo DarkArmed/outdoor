@@ -43,7 +43,7 @@ alembic upgrade head
 
 ## Seed data
 
-Import existing site data and create default user from `config/profile.json`:
+Import public data from `data/` and create default user from `config/profile.json`:
 
 ```bash
 python -m app.seed
@@ -63,4 +63,4 @@ API docs: http://localhost:8000/docs
 pytest
 ```
 
-Tests use an in-memory SQLite database.
+Tests use an isolated SQLite test database. Browser tests create a separate temporary SQLite database.
