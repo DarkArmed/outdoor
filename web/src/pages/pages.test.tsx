@@ -14,6 +14,7 @@ vi.mock("@/hooks/useApi", () => ({
   useTrip: vi.fn(),
   useMyBadges: vi.fn(),
   useTaskStates: vi.fn(),
+  useGearStates: vi.fn(),
 }));
 vi.mock("@/components/RouteMaps", () => ({ RouteMaps: () => <p>路线图</p> }));
 vi.mock("@/components/Achievements", () => ({
@@ -37,6 +38,10 @@ const plan = {
   hike: {},
 } as unknown as PlanOut;
 beforeEach(() => {
+  window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+  vi.mocked(hooks.useGearStates).mockReturnValue({
+    data: [],
+  } as unknown as ReturnType<typeof hooks.useGearStates>);
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute("open", "");
   };
@@ -123,7 +128,7 @@ it("renders multi-day headings with their own itinerary content", () => {
       </Routes>
     </MemoryRouter>,
   );
-  expect(screen.getByRole("heading", { name: "第一天" })).toBeInTheDocument();
-  expect(screen.getByRole("heading", { name: "第二天" })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /第一天/ })).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /第二天/ })).toBeInTheDocument();
   expect(screen.getByText("返程")).toBeInTheDocument();
 });

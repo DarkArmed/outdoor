@@ -49,17 +49,11 @@ export function HomePage() {
   };
 
   return (
-    <div className="bg-paper">
-      {/* Hero */}
-      <section className="text-center pt-4 pb-1 bg-gradient-to-b from-sky to-paper">
-        <div
-          className="mx-auto max-w-[560px]"
-          dangerouslySetInnerHTML={{ __html: sceneSVG("hero", false) }}
-        />
-        <h1 className="mt-3 text-4xl font-bold text-ink drop-shadow-[2px_2px_0_#FFD93D]">
-          {siteTitle(child?.name)}
-        </h1>
-        <p className="text-lg text-gray-700 mt-1">
+    <div className="legacy-page">
+      <header className="hero">
+        <div dangerouslySetInnerHTML={{ __html: sceneSVG("hero", false) }} />
+        <h1>🏕️ {siteTitle(child?.name)}</h1>
+        <p className="subtitle">
           {heroSubtitle(
             child?.name,
             age,
@@ -67,45 +61,36 @@ export function HomePage() {
             profile?.family_travelers?.[0],
           )}
         </p>
-        <div className="flex justify-center gap-3 mt-4">
-          <button
-            onClick={() => openDrawer("badges")}
-            className="bg-white/80 hover:bg-white px-4 py-2 rounded-full font-bold shadow-sm"
-          >
+        <nav className="hero-links">
+          <button className="hero-link" onClick={() => openDrawer("badges")}>
             🏅 徽章墙
           </button>
-          <button
-            onClick={() => openDrawer("footprint")}
-            className="bg-white/80 hover:bg-white px-4 py-2 rounded-full font-bold shadow-sm"
-          >
+          <button className="hero-link" onClick={() => openDrawer("footprint")}>
             🗺️ 足迹地图
           </button>
-        </div>
-      </section>
-
-      {/* Main */}
-      <div className="max-w-[1560px] mx-auto px-4 pb-12 flex gap-6">
-        <MonthRail onSelect={scrollToMonth} />
-
-        <div className="flex-1 min-w-0 space-y-8">
-          {MONTHS.map((m) => (
-            <section key={m.key} id={`month-${m.key}`} className="scroll-mt-4">
-              <h2 className="text-2xl font-bold mb-4 pl-3 border-l-[8px] border-sun rounded">
-                {m.label} · {m.desc}
-              </h2>
-              <div className="flex gap-4 overflow-x-auto pb-4">
-                {grouped[m.key].map((plan) => (
-                  <PlanCard key={plan.id} plan={plan} />
-                ))}
-              </div>
-            </section>
-          ))}
-
-          <ArchiveGrid plans={plans || []} />
-          <SafetyBanner />
+        </nav>
+      </header>
+      <div className="home-main">
+        <div className="home-layout">
+          <MonthRail onSelect={scrollToMonth} />
+          <div className="home-content">
+            {MONTHS.map((m) => (
+              <section className="month-row" key={m.key} id={`month-${m.key}`}>
+                <h2>
+                  {m.label} · {m.desc}
+                </h2>
+                <div className="row-scroll">
+                  {grouped[m.key].map((plan) => (
+                    <PlanCard key={plan.id} plan={plan} />
+                  ))}
+                </div>
+              </section>
+            ))}
+            <ArchiveGrid plans={plans || []} />
+            <SafetyBanner />
+          </div>
         </div>
       </div>
-
       <BadgeDrawer
         open={drawerOpen}
         panel={panel}

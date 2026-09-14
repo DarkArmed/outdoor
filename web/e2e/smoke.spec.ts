@@ -56,21 +56,22 @@ test("profile, persisted checklists, cancelled/successful checkin, badges, footp
   await page.reload();
   await expect(gear).toBeChecked();
   await expect(task).toBeChecked();
-  const checkin = page.getByRole("button", { name: "长按 2 秒完成打卡" });
+  const checkin = page.getByRole("button", { name: /长按 2 秒打卡/ });
   await checkin.focus();
   await page.keyboard.down("Space");
   await page.keyboard.up("Space");
   await expect(checkin).toBeEnabled();
   await page.keyboard.down("Space");
   await expect(
-    page.getByRole("button", { name: "✅ 已完成打卡" }),
+    page.getByRole("button", { name: /已完成本次冒险/ }),
   ).toBeDisabled({ timeout: 10000 });
   await page.keyboard.up("Space");
-  await expect(page.getByText("🎉 打卡成功！")).toBeVisible();
+  await expect(page.getByText("🎉 解锁徽章！")).toBeVisible();
   await page.screenshot({
     path: info.outputPath("detail.png"),
     fullPage: true,
   });
+  await page.getByRole("button", { name: "继续看计划" }).click();
   const tripUrl = page.url();
   await page.goto("/?panel=badges");
   await expect(page.getByText(/已冒险 1 次/)).toBeVisible();
@@ -127,31 +128,31 @@ test("legacy import keeps source and imports once", async ({ page }) => {
   await expect(page.locator("#gear input").first()).toBeChecked();
   await expect(page.locator("#tasks input").first()).toBeChecked();
   await expect(
-    page.getByRole("button", { name: "✅ 已完成打卡" }),
+    page.getByRole("button", { name: /已完成本次冒险/ }),
   ).toBeDisabled();
 });
 
 test("multi-day plan, full-star completion and deletion", async ({ page }) => {
   await register(page);
   await page.goto("/plan/2026-09-19");
+  await expect(page.getByRole("heading", { name: /周六：搭营/ })).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "周六：搭营 + 观星夜" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "周日：农场慢晨 + 返程" }),
+    page.getByRole("heading", { name: /周日：农场慢晨/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "创建本次出行计划" }).click();
   const tasks = page.locator("#tasks input[type=checkbox]");
-  await expect(tasks.first()).toBeVisible();
+  await expect(tasks.first()).toBeEnabled();
+  await expect(tasks).toHaveCount(3);
   for (const task of await tasks.all()) {
     await task.click();
     await expect(task).toBeChecked();
     await expect(task).toBeEnabled();
   }
-  await page.getByRole("button", { name: "长按 2 秒完成打卡" }).focus();
+  await page.getByRole("button", { name: /长按 2 秒打卡/ }).focus();
   await page.keyboard.down("Enter");
   await expect(page.getByText("🌟 满星通关！")).toBeVisible({ timeout: 10000 });
   await page.keyboard.up("Enter");
+  await expect(page.locator(".badge-card.full-star")).toBeVisible();
   await page.goto("/my-trips");
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "删除出行" }).click();

@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from "react";
 export function CheckinButton({
   done,
   onCheckin,
+  badge,
 }: {
   done: boolean;
+  badge?: { icon: string; name: string };
   onCheckin: () => Promise<void>;
 }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,11 +65,15 @@ export function CheckinButton({
             cancel();
           }
         }}
-        className={`checkin-button ${holding ? "holding" : ""}`}
+        className={`checkin-btn ${holding ? "holding" : ""}`}
       >
         <span className="checkin-progress" />
         <span className="relative">
-          {done ? "✅ 已完成打卡" : pending ? "保存中…" : "长按 2 秒完成打卡"}
+          {done
+            ? `✅ 已完成本次冒险${badge ? ` · ${badge.icon} ${badge.name}` : ""}`
+            : pending
+              ? "保存中…"
+              : "🏁 完成本次冒险（长按 2 秒打卡）"}
         </span>
       </button>
       {error && (

@@ -35,22 +35,18 @@ export function BadgeWall() {
   const stats = computeStats(completed);
   return (
     <>
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+      <div className="badge-wall">
         {views.map((b) => (
           <div
             key={b.id}
-            className={`rounded-2xl p-3 text-center ${b.unlocked ? "bg-sun/30" : "bg-gray-100"} ${b.milestone ? "border-2 border-dashed border-orange" : ""}`}
+            className={`badge-cell${b.unlocked ? " unlocked" : ""}${b.milestone ? " milestone" : ""}`}
           >
-            <div
-              className={`text-4xl ${b.unlocked ? "" : "grayscale opacity-40"}`}
-            >
-              {b.icon}
-            </div>
-            <p className="text-sm mt-2">{b.unlocked ? b.name : "？？？"}</p>
+            <div className="badge-icon">{b.icon}</div>
+            <div className="badge-name">{b.unlocked ? b.name : "？？？"}</div>
           </div>
         ))}
       </div>
-      <p className="mt-5 text-muted">
+      <p className="stats-bar">
         已冒险 {stats.count} 次 · 徒步 {stats.km} km · 露营 {stats.camps} 晚
       </p>
     </>
@@ -69,9 +65,12 @@ export function FootprintMap() {
   );
   return (
     <>
-      <h3 className="text-xl font-bold mb-4">我们的足迹</h3>
+      <h3>🗺️ 我们的足迹</h3>
       {svg ? (
-        <div dangerouslySetInnerHTML={{ __html: svg }} />
+        <div
+          className="footprint-map"
+          dangerouslySetInnerHTML={{ __html: svg }}
+        />
       ) : (
         <p>暂无路线坐标，完成路线数据导入后即可查看足迹。</p>
       )}
