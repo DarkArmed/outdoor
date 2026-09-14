@@ -25,7 +25,9 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    # Stored legacy/seed identities may use reserved local domains.
+    # Registration input remains validated by EmailStr.
+    email: str
     is_active: bool
     created_at: datetime
 

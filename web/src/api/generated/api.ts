@@ -694,10 +694,7 @@ export interface components {
         UserOut: {
             /** Id */
             id: number;
-            /**
-             * Email
-             * Format: email
-             */
+            /** Email */
             email: string;
             /** Is Active */
             is_active: boolean;
