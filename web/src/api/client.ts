@@ -54,8 +54,8 @@ export async function fetchMe() {
 }
 
 export async function fetchProfile() {
-  const res = await apiClient.get<ProfileOut>('/profile')
-  return res.data
+  try { return (await apiClient.get<ProfileOut>('/profile')).data }
+  catch (error) { if (axios.isAxiosError(error) && error.response?.status === 404) return null; throw error }
 }
 
 export async function updateProfile(data: ProfileUpdate) {
@@ -74,8 +74,12 @@ export async function fetchPlan(id: string) {
 }
 
 export async function fetchTrips() {
-  const res = await apiClient.get<TripOut[]>('/trips')
-  return res.data
+  const trips: TripOut[] = []
+  for (let skip = 0; ; skip += 100) {
+    const res = await apiClient.get<TripOut[]>('/trips', { params: { skip, limit: 100 } })
+    trips.push(...res.data)
+    if (res.data.length < 100) return trips
+  }
 }
 
 export async function fetchTrip(id: number) {
@@ -145,4 +149,15 @@ export async function unlockBadge(tripId: number, badgeId: string) {
 export async function fetchMyBadges() {
   const res = await apiClient.get<BadgeUnlockOut[]>('/me/badges')
   return res.data
+}
+
+export async function fetchRoutes() {
+  return (await apiClient.get<RouteOut[]>('/routes')).data
+}
+export interface LegacyPayload {
+  plans: { plan_id: string; gear: Record<number, boolean>; tasks: Record<number, boolean>; done: boolean }[]
+  badges: string[]
+}
+export async function importLegacy(payload: LegacyPayload) {
+  return (await apiClient.post<{ import_id: string; trip_ids: number[] }>('/legacy/import', payload)).data
 }

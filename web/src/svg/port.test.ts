@@ -37,7 +37,7 @@ const data: MapData = {
 
 function legacy(input: MapData) {
   const context = createContext({ ROUTES: input.routes, NETWORK: input.network, PLANS: input.plans, plan })
-  runInContext(readFileSync(new URL('../../../site/js/maps.js', import.meta.url), 'utf8'), context)
+  runInContext(readFileSync(new URL('./__fixtures__/maps.js', import.meta.url), 'utf8'), context)
   return (expression: string): string => runInContext(expression, context) as string
 }
 
@@ -64,7 +64,7 @@ describe('mechanical SVG port', () => {
 
   it('preserves all legacy theme scenes with and without mom', () => {
     const context = createContext({})
-    runInContext(readFileSync(new URL('../../../site/js/scenes.js', import.meta.url), 'utf8'), context)
+    runInContext(readFileSync(new URL('./__fixtures__/scenes.js', import.meta.url), 'utf8'), context)
     for (const theme of ['water', 'hike', 'camp', 'cycle', 'redleaf', 'snow']) {
       for (const mom of [false, true]) {
         expect(sceneSVG(theme, mom)).toBe(runInContext(`sceneSVG('${theme}', ${mom})`, context))
