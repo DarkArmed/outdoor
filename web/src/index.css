@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./parity.css";
 
 @theme {
   --color-sky: #7ED6FF;
@@ -72,14 +73,14 @@ section[id] {
   margin: 0;
   padding: 0;
   border: 0;
-  width: min(520px, 100vw);
+  width: min(560px, 92vw);
   max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
   color: var(--color-ink);
   box-shadow: -8px 0 30px rgb(0 0 0 / 15%);
 }
-.badge-drawer::backdrop { background: rgb(0 0 0 / 35%); }
+.badge-drawer::backdrop { background: rgba(43,58,103,.45); }
 
 #root {
   min-height: 100svh;
@@ -93,9 +94,3 @@ section[id] {
 button { cursor: pointer; }
 button:disabled { cursor: default; opacity: .65; }
 :focus-visible { outline: 3px solid #3487b3; outline-offset: 3px; }
-.checkin-button { width: 100%; position: relative; overflow: hidden; padding: 18px; background: var(--color-sun); border-radius: 18px; font-weight: 700; touch-action: none; user-select: none; }
-.checkin-progress { position: absolute; inset: 0; background: var(--color-coral); opacity: .4; transform: scaleX(0); transform-origin: left; }
-.holding .checkin-progress { transform: scaleX(1); transition: transform 2s linear; }
-.badge-celebration { background: #fff7d6; border: 3px solid var(--color-sun); border-radius: 20px; padding: 24px; animation: badge-pop .4s ease-out; }
-@keyframes badge-pop { from { transform: scale(.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; } }

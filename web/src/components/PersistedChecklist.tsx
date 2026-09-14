@@ -6,10 +6,12 @@ export function PersistedChecklist({
   tripId,
   items,
   kind,
+  baseCount,
 }: {
-  tripId: number;
+  tripId?: number;
   items: string[];
   kind: "gear" | "tasks";
+  baseCount?: number;
 }) {
   const gear = useGearStates(kind === "gear" ? tripId : undefined);
   const tasks = useTaskStates(kind === "tasks" ? tripId : undefined);
@@ -24,7 +26,7 @@ export function PersistedChecklist({
   const ready = kind === "gear" ? gear.data : tasks.data;
   const loadError = kind === "gear" ? gear.error : tasks.error;
   async function toggle(index: number, value: boolean) {
-    if (busy.current) return;
+    if (!tripId || busy.current) return;
     busy.current = true;
     setSaving(true);
     setError("");
@@ -57,39 +59,73 @@ export function PersistedChecklist({
         </button>
       </p>
     );
-  if (!ready) return <p>加载清单…</p>;
+  if (tripId && !ready) return <p>加载清单…</p>;
   const count = items.filter((_, i) => checked.has(i)).length;
+  const itemRow = (item: string, index: number) => (
+    <label
+      key={index}
+      className={`${kind === "gear" ? "gear-item" : "task-item"}${checked.has(index) ? " done" : ""}`}
+    >
+      <input
+        type="checkbox"
+        disabled={!tripId || saving}
+        checked={checked.has(index)}
+        onChange={(e) => void toggle(index, e.target.checked)}
+      />
+      <span>{item}</span>
+    </label>
+  );
   return (
     <div>
-      <div className="flex gap-3 items-center mb-3">
-        <progress
-          max={items.length || 1}
-          value={count}
-          className="flex-1 accent-grass-dk"
-          aria-label="清单完成进度"
-        />
-        <span>
-          {count}/{items.length}
-        </span>
-        {saving && <span role="status">保存中…</span>}
-      </div>
-      {items.map((item, index) => (
-        <label
-          key={index}
-          className="flex items-center gap-3 p-3 my-2 rounded-xl bg-paper border border-gray-200"
-        >
-          <input
-            type="checkbox"
-            className="w-5 h-5 accent-grass-dk"
-            disabled={saving}
-            checked={checked.has(index)}
-            onChange={(e) => void toggle(index, e.target.checked)}
-          />
-          <span className={checked.has(index) ? "line-through text-muted" : ""}>
-            {item}
-          </span>
-        </label>
-      ))}
+      {kind === "gear" && (
+        <>
+          <div
+            className="gear-progress"
+            role="progressbar"
+            aria-label="装备准备进度"
+            aria-valuemin={0}
+            aria-valuemax={items.length}
+            aria-valuenow={count}
+          >
+            <div
+              style={{
+                width: `${items.length ? (count / items.length) * 100 : 0}%`,
+              }}
+            />
+          </div>
+          <p className="gear-progress-text">
+            {items.length && count === items.length
+              ? "🎉 全部准备好啦，出发！"
+              : `已准备 ${count}/${items.length} 件`}
+          </p>
+        </>
+      )}
+      {kind === "gear" ? (
+        <div className="gear-section">
+          <div className="gear-group">
+            <h3>🎒 基础装备（每次必带）</h3>
+            {items.slice(0, baseCount ?? items.length).map(itemRow)}
+          </div>
+          <div className="gear-group">
+            <h3>⭐ 本周特需</h3>
+            {items
+              .slice(baseCount ?? items.length)
+              .map((item, i) => itemRow(item, i + (baseCount ?? items.length)))}
+          </div>
+        </div>
+      ) : (
+        <div className="task-list">{items.map(itemRow)}</div>
+      )}
+      {!tripId && (
+        <p className="muted">
+          创建出行计划后开启{kind === "gear" ? "装备" : "任务"}清单。
+        </p>
+      )}
+      {saving && (
+        <p role="status" className="checklist-saving">
+          保存中…
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-coral">
           {error}

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import {
   usePlans,
   usePlan,
@@ -8,8 +8,9 @@ import {
   useMyBadges,
   useTaskStates,
 } from "@/hooks/useApi";
-import { createTrip, checkinTrip } from "@/api/client";
+import { createTrip, checkinTrip, fetchMilestones } from "@/api/client";
 import { tripContent } from "@/utils/content";
+import { BadgeCelebration } from "@/components/BadgeCelebration";
 import { CheckinButton } from "@/components/CheckinButton";
 import { DetailRail } from "@/components/DetailRail";
 import { SectionNav } from "@/components/SectionNav";
@@ -46,6 +47,37 @@ function PlanDetail() {
   const badges = useMyBadges();
   const taskStates = useTaskStates(trip?.id);
   const [checkedIn, setCheckedIn] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      return;
+    const observer = new IntersectionObserver(
+      (entries) =>
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("reveal-enter");
+            observer.unobserve(entry.target);
+          }
+        }),
+      { threshold: 0.1 },
+    );
+    root
+      .querySelectorAll("section[id], .it-item")
+      .forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [template, trip]);
+
+  const [newMilestones, setNewMilestones] = useState<
+    { icon: string; name: string }[]
+  >([]);
+  useEffect(() => {
+    if (template)
+      document.title = `${trip ? tripContent(trip, template).title : template.title} · 户外大冒险`;
+    return () => {
+      document.title = "户外大冒险";
+    };
+  }, [template, trip]);
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState("");
   if (tripsError) return <p role="alert">出行加载失败，请刷新重试。</p>;
@@ -92,189 +124,145 @@ function PlanDetail() {
 
   const handleCheckin = async () => {
     if (!trip) return;
+    const previous = new Set(badges.data?.map((b) => b.badge_id) || []);
     await checkinTrip(trip.id);
-    await Promise.all([mutateTrips(), detail.mutate(), badges.mutate()]);
+    const [, , unlocked, rules] = await Promise.all([
+      mutateTrips(),
+      detail.mutate(),
+      badges.mutate(),
+      fetchMilestones(),
+    ]);
+    setNewMilestones(
+      rules.filter(
+        (m) =>
+          !previous.has(m.id) && unlocked?.some((b) => b.badge_id === m.id),
+      ),
+    );
     setCheckedIn(true);
   };
 
   return (
-    <div className="bg-paper">
-      <section className="text-center pt-3">
-        <div
-          className="mx-auto max-w-[620px]"
-          dangerouslySetInnerHTML={{ __html: sceneSVG(plan.theme, plan.mom) }}
+    <div className="legacy-page detail-layout">
+      {allPlans && (
+        <DetailRail
+          plans={allPlans.filter((p) => !p.archived)}
+          currentId={plan.id}
         />
-        <h1 className="text-3xl font-bold mt-2">
-          {plan.emoji} {plan.title}
-        </h1>
-        <div className="flex justify-center gap-2 mt-2 flex-wrap">
-          <span className={`badge ${typeClass}`}>{plan.type}</span>
-          <span className="badge">{plan.date}</span>
-          <span className="badge">{plan.location}</span>
-          {plan.mom && <span className="badge badge-mom">👩 妈妈同行</span>}
-          {trip?.status === "done" && (
-            <span className="badge badge-done">✅ 已打卡</span>
-          )}
-        </div>
-      </section>
-
-      <SectionNav />
-
-      <div className="max-w-[1560px] mx-auto px-4 py-6 flex gap-6">
-        {allPlans && (
-          <DetailRail
-            plans={allPlans.filter((p) => !p.archived)}
-            currentId={plan.id}
+      )}
+      <div className="detail-content" ref={contentRef}>
+        <section className="detail-hero">
+          <div
+            dangerouslySetInnerHTML={{ __html: sceneSVG(plan.theme, plan.mom) }}
           />
-        )}
-
-        <div className="flex-1 min-w-0 space-y-8">
-          <section id="goal" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              本周目标
-            </h2>
-            <p className="text-lg mb-4">{plan.goal}</p>
-            {plan.tips && plan.tips.length > 0 && (
-              <div className="bg-sky/20 rounded-xl p-4">
-                <h3 className="font-bold mb-2">爸爸的小抄</h3>
-                <ul className="list-disc pl-5 space-y-1">
-                  {plan.tips.map((t, i) => (
-                    <li key={i}>{t}</li>
-                  ))}
-                </ul>
-              </div>
+          <h1>
+            {plan.emoji} {plan.title}
+          </h1>
+          <div className="badges">
+            <span className={`badge ${typeClass}`}>{plan.type}</span>
+            <span className="badge">🗓️ {plan.date}</span>
+            <span className="badge">📍 {plan.location}</span>
+            <span className="badge">🚗 {String(plan.drive?.time || "")}</span>
+            {plan.mom && <span className="badge badge-mom">👩 妈妈同行</span>}
+            {trip?.status === "done" && (
+              <span className="badge">✅ 已打卡</span>
             )}
-          </section>
-
-          {plan.tasks && plan.tasks.length > 0 && (
-            <section id="tasks" className="bg-card rounded-2xl p-6 shadow-sm">
-              <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-                小勇士任务
-              </h2>
-              {trip ? (
-                <PersistedChecklist
-                  key={`tasks-${trip.id}`}
-                  tripId={trip.id}
-                  items={plan.tasks}
-                  kind="tasks"
-                />
-              ) : (
-                <div>
-                  <ul>
-                    {plan.tasks.map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                  <p className="text-muted">创建出行计划后开启任务清单。</p>
-                </div>
-              )}
-            </section>
-          )}
-
-          <section id="itinerary" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              行程安排
-            </h2>
-            <ItineraryTimeline
-              items={plan.itinerary as ItineraryItem[] | ItineraryItem[][]}
-              dayNames={plan.day_names as string[] | undefined}
-            />
-          </section>
-
-          <section id="route" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              路线
-            </h2>
-            <div className="space-y-4">
-              <RouteMaps plan={plan} />
+          </div>
+        </section>
+        <SectionNav hasTasks={plan.tasks.length > 0} />
+        <section id="goal">
+          <h2>🎯 本周目标</h2>
+          <div className="goal-box">{plan.goal}</div>
+          {plan.tips?.length > 0 && (
+            <div className="tip-box">
+              <strong>💡 爸爸的小抄：</strong>
+              <ul>
+                {plan.tips.map((tip, i) => (
+                  <li key={i}>{tip}</li>
+                ))}
+              </ul>
             </div>
+          )}
+        </section>
+        {plan.tasks.length > 0 && (
+          <section id="tasks">
+            <h2>🗡️ 小勇士任务</h2>
+            <PersistedChecklist
+              key={`tasks-${trip?.id}`}
+              tripId={trip?.id}
+              items={plan.tasks}
+              kind="tasks"
+            />
+            <p className="muted">全部完成 + 打卡，徽章升级为满星版 🌟</p>
           </section>
-
-          <section id="gear" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              本周必带装备
-            </h2>
-            {plan.gear &&
-              (trip ? (
-                <PersistedChecklist
-                  key={`gear-${trip.id}`}
-                  tripId={trip.id}
-                  items={[
-                    ...(plan.gear.base || []),
-                    ...(plan.gear.special || []),
-                  ]}
-                  kind="gear"
-                />
-              ) : (
-                <div>
-                  <ul>
-                    {[
-                      ...(plan.gear.base || []),
-                      ...(plan.gear.special || []),
-                    ].map((item, i) => (
-                      <li key={i}>{item}</li>
-                    ))}
-                  </ul>
-                  <p className="text-muted">创建出行计划后开启装备清单。</p>
-                </div>
-              ))}
-          </section>
-
-          <section id="safety" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              安全要点
-            </h2>
-            <ul className="list-disc pl-5 space-y-2">
-              {plan.safety?.map((s, i) => (
-                <li key={i}>{s}</li>
+        )}
+        <section id="itinerary">
+          <h2>🕐 行程安排</h2>
+          <ItineraryTimeline
+            items={plan.itinerary as ItineraryItem[] | ItineraryItem[][]}
+            dayNames={plan.day_names}
+          />
+        </section>
+        <section id="route">
+          <h2>🗺️ 路线图</h2>
+          <RouteMaps plan={plan} />
+        </section>
+        <section id="gear">
+          <h2>🎒 本周必带装备（点一下打勾）</h2>
+          <PersistedChecklist
+            key={`gear-${trip?.id}`}
+            tripId={trip?.id}
+            items={[...(plan.gear.base || []), ...(plan.gear.special || [])]}
+            baseCount={plan.gear.base?.length || 0}
+            kind="gear"
+          />
+        </section>
+        <section id="safety">
+          <h2>🛡️ 安全要点</h2>
+          <ul className="safety-list">
+            {plan.safety.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </section>
+        <section id="review">
+          <h2>📝 回来以后聊一聊</h2>
+          <div className="review-box">
+            <ul>
+              {plan.review.map((item, i) => (
+                <li key={i}>{item}</li>
               ))}
             </ul>
-          </section>
-
-          <section id="review" className="bg-card rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold mb-3 border-l-[8px] border-sun pl-3 rounded">
-              回顾
-            </h2>
-            <ul className="list-disc pl-5 space-y-2">
-              {plan.review?.map((r, i) => (
-                <li key={i}>{r}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section className="bg-card rounded-2xl p-6 shadow-sm">
-            {trip ? (
+          </div>
+        </section>
+        <section id="checkin">
+          {trip ? (
+            plan.badge && (
               <CheckinButton
                 key={trip.id}
                 done={trip.status === "done"}
+                badge={{ icon: plan.badge.icon, name: plan.badge.name }}
                 onCheckin={handleCheckin}
               />
-            ) : (
-              <button
-                onClick={handleCreateTrip}
-                disabled={creating}
-                className="w-full py-4 rounded-2xl bg-sky text-white font-bold disabled:opacity-60"
-              >
-                {creating ? "创建中…" : "创建本次出行计划"}
-              </button>
-            )}
-            {actionError && <p role="alert">{actionError}</p>}
-            {checkedIn && (
-              <div className="mt-4 p-4 bg-sun/20 rounded-xl text-center font-bold text-ink">
-                <div role="status" className="badge-celebration">
-                  {allTasksChecked ? "🌟 满星通关！" : "🎉 打卡成功！"}
-                  <p>
-                    {plan.badge?.icon} {plan.badge?.name}
-                  </p>
-                  <Link to="/?panel=badges">去看看徽章墙 →</Link>
-                  <button className="ml-4" onClick={() => setCheckedIn(false)}>
-                    继续看计划
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-        </div>
+            )
+          ) : (
+            <button
+              className="checkin-btn"
+              disabled={creating}
+              onClick={handleCreateTrip}
+            >
+              {creating ? "创建中…" : "创建本次出行计划"}
+            </button>
+          )}
+          {actionError && <p role="alert">{actionError}</p>}
+        </section>
+        {checkedIn && plan.badge && (
+          <BadgeCelebration
+            badge={{ icon: plan.badge.icon, name: plan.badge.name }}
+            fullStar={allTasksChecked}
+            milestones={newMilestones}
+            onClose={() => setCheckedIn(false)}
+          />
+        )}
       </div>
     </div>
   );
