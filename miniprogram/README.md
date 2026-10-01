@@ -4,11 +4,17 @@
 
 ## 运行步骤
 
-1. **启动后端**（另开终端）：
+1. **启动后端**（另开终端）。全新克隆/worktree 需先准备本地配置与数据（`.env`、`config/profile.json` 均被 gitignore，不会随仓库带过来）：
    ```bash
-   cd ../backend && uvicorn app.main:app --reload
+   cd ../backend
+   cp .env.example .env          # 然后把 DATABASE_URL 改为 sqlite:///./outdoor.db，SECRET_KEY 任意，加一行 DEBUG=true
+   cp ../../config/profile.json ../config/   # 可选：没有则画像页显示占位
+   alembic upgrade head          # 建库（含微信登录列）
+   python -m app.seed            # 导入方案/路线/里程碑 + 默认用户
+   uvicorn app.main:app --reload
    ```
    本地开发无需真实 AppID：后端 `DEBUG=true` 且未配置 `WECHAT_MINIAPP_APPID` 时走 mock code2session（确定性 `dev_` 前缀 openid）。
+   若启动报数据库连接错误，就是 `.env` 没配（默认连 PostgreSQL）；若报端口占用，用 `netstat -ano | findstr :8000` 找占用进程，或换 `--port 8001`（同时改 `config.js`）。
 2. **导入项目**：微信开发者工具「导入」选择本目录（`miniprogram/`），无 AppID 时使用测试号（工程已用占位 `touristappid`）。
 3. **不校验合法域名**：开发期在「详情 → 本地设置」勾选「不校验合法域名…」（工程 `setting.urlCheck` 已默认关闭）。
 4. 点击「微信一键登录」即可进入（mock 模式下任意 code 都能登录成功）。
