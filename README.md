@@ -23,7 +23,7 @@
 ```
 outdoor/
 ├── README.md               # 导航首页（本文件）
-├── CLAUDE.md               # Claude Code 工作指南
+├── AGENTS.md               # AI 编码代理工作指南
 ├── 00-赛季总览.md           # 赛季框架与地点库
 ├── 00-冬季模式计划.md       # 12–2 月冬季策略
 ├── plans/                  # 每周计划（Markdown 源文档）

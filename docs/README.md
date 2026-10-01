@@ -65,4 +65,4 @@ docs/
 | 每周活动方案 | `plans/` |
 | 装备台账 / 采购 | `equipment/` |
 | 任务协调 | `docs/tasks/` |
-| Claude 工作约定 | `CLAUDE.md` |
+| AI 代理工作约定 | `AGENTS.md` |

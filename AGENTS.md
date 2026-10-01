@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents (Claude Code, Kimi Code, etc.) when working with code in this repository.
 
 ## 项目定位
 
@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 outdoor/
 ├── README.md               # 导航首页（含当前进度清单）
-├── CLAUDE.md               # 本文件
+├── AGENTS.md               # 本文件
 ├── 00-赛季总览.md           # 赛季节奏、地点库、安全红线、计划索引
 ├── 00-冬季模式计划.md       # 12–2 月：活动库、每周建议、冬季装备与安全
 ├── docs/                    # 规范类文档（见 docs/README.md 的组织规则）
