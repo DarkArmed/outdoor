@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小程序原型画廊 · 8 屏</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #F4F1E8; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    padding: 36px 20px 80px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  header h1 { font-size: 26px; }
+  header p { color: #718096; margin-top: 6px; font-size: 14px; }
+  header .tip {
+    margin-top: 12px; font-size: 12px; color: #975A16;
+    background: #FFFBEB; border: 1px dashed #FFD93D; border-radius: 10px; padding: 8px 12px;
+  }
+  .screen { margin-top: 44px; }
+  .screen h2 { font-size: 18px; }
+  .screen .desc { color: #718096; font-size: 13px; margin: 2px 0 14px; }
+  .phone {
+    width: 399px; border: 11px solid #2D3748; border-radius: 42px;
+    background: #FFFDF5; overflow: hidden;
+    box-shadow: 0 16px 36px rgba(45,55,72,.18);
+  }
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #FFFDF5; padding: 8px 20px 4px; font-size: 13px; font-weight: 700;
+  }
+  .statusbar .icons { letter-spacing: 3px; font-size: 12px; }
+  .phone iframe {
+    display: block; width: 375px; border: none; height: 900px;
+    background: #FFFDF5;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎨 小程序高保真原型 · 8 屏</h1>
+    <p>PRD-005 微信小程序客户端 · 纸系卡通风格 · 375px 宽移动页面 · 每屏完整展开，无内部滚动</p>
+    <p class="tip">提示：画廊依赖 JS 读取 iframe 内容高度做自适应；若浏览器拦截 file:// 下的跨帧读取（如 Chrome），每屏会回退显示默认高度 900px，可直接双击打开 screens/ 下单个页面查看完整内容，或用静态服务器（如 <code>npx serve</code>）打开本页。</p>
+  </header>
+
+  <section class="screen">
+    <h2>1. 登录页 <code>login.html</code></h2>
+    <p class="desc">品牌 Hero + 三个功能点 + 微信一键登录，首次登录自动创建账号。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/login.html" scrolling="no" onload="fit(this)" title="登录页"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>2. 计划库 <code>plans.html</code>（Tab 1）</h2>
+    <p class="desc">Hero + 安全口诀横幅 + 按月份分组的方案卡片 + 底部「📦 备用计划」区。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/plans.html" scrolling="no" onload="fit(this)" title="计划库"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>3. 方案详情 <code>plan-detail.html</code></h2>
+    <p class="desc">公共方案只读：目标 / 小抄 / 任务 / 行程 / 路线占位 / 装备 / 安全 / 回顾，底部「加入我的出行」。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/plan-detail.html" scrolling="no" onload="fit(this)" title="方案详情"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>4. 我的出行 · 空状态 <code>trips-empty.html</code>（Tab 2）</h2>
+    <p class="desc">引导文案 + 「一键加入本赛季计划」按钮。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/trips-empty.html" scrolling="no" onload="fit(this)" title="我的出行空状态"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>5. 我的出行 · 列表 <code>trips.html</code>（Tab 2）</h2>
+    <p class="desc">进行中分区在前（带准备进度），已完成分区在后（已打卡 ✔）。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/trips.html" scrolling="no" onload="fit(this)" title="我的出行列表"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>6. 出行详情 <code>trip-detail.html</code>（核心页）</h2>
+    <p class="desc">胶囊锚点导航；任务与装备可勾选，装备进度 5/12；内联 SVG 模拟路线图；底部长按打卡大按钮。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/trip-detail.html" scrolling="no" onload="fit(this)" title="出行详情"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>7. 出行详情 · 打卡庆祝 <code>trip-detail-celebrate.html</code></h2>
+    <p class="desc">背景页压暗 + 🎉 解锁徽章弹窗：满星版金色边框 + 里程碑「🏕️ 首次露营」。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/trip-detail-celebrate.html" scrolling="no" onload="fit(this)" title="打卡庆祝"></iframe>
+    </div>
+  </section>
+
+  <section class="screen">
+    <h2>8. 我的 <code>me.html</code>（Tab 3）</h2>
+    <p class="desc">用户卡片、统计条、徽章墙（已解锁高亮 / 未解锁「？？？」）、家庭画像摘要、退出登录。</p>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span class="icons">📶 🔋</span></div>
+      <iframe src="screens/me.html" scrolling="no" onload="fit(this)" title="我的"></iframe>
+    </div>
+  </section>
+</div>
+
+<script>
+  // 画廊：按内容自适应 iframe 高度（file:// 下同源可读；失败时保留 900px 默认高度）
+  function fit(f) {
+    try {
+      var h = f.contentDocument.body.scrollHeight;
+      if (h && h > 100) f.style.height = (h + 2) + 'px';
+    } catch (e) { /* 跨帧读取被拦截时保持默认高度 */ }
+  }
+  window.addEventListener('load', function () {
+    var list = document.querySelectorAll('.phone iframe');
+    for (var i = 0; i < list.length; i++) fit(list[i]);
+  });
+</script>
+</body>
+</html>

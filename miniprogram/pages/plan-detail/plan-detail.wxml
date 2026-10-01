@@ -1,0 +1,84 @@
+<view wx:if="{{plan}}">
+  <view class="page-body">
+    <!-- Hero -->
+    <view class="d-hero card">
+      <view class="d-art theme-{{plan.theme || 'default'}}">
+        <text class="d-emoji">{{plan.emoji || '🌲'}}</text>
+      </view>
+      <view class="d-title">{{plan.title}}</view>
+      <view class="d-meta muted">📅 {{plan.date}} · 📍 {{plan.location}}</view>
+      <view class="d-badges">
+        <text class="badge {{typeCls}}">{{plan.type}}</text>
+        <text class="badge badge-drive" wx:if="{{plan.drive && plan.drive.time}}">🚗 {{plan.drive.time}}</text>
+        <text class="badge badge-mom" wx:if="{{plan.mom}}">👩 妈妈同行</text>
+      </view>
+    </view>
+
+    <section-title emoji="🎯" title="本周目标" />
+    <view class="goal-box">{{plan.goal}}</view>
+
+    <block wx:if="{{plan.tips && plan.tips.length}}">
+      <section-title emoji="💡" title="爸爸的小抄" />
+      <view class="tip-box">
+        <view wx:for="{{plan.tips}}" wx:key="*this">· {{item}}</view>
+      </view>
+    </block>
+
+    <block wx:if="{{taskRows.length}}">
+      <section-title emoji="🗡️" title="小勇士任务（只读）" />
+      <view class="card pad">
+        <check-row wx:for="{{taskRows}}" wx:key="idx" text="{{item.text}}" checked="{{false}}" disabled="{{true}}" />
+      </view>
+    </block>
+
+    <block wx:if="{{days.length}}">
+      <section-title emoji="🕐" title="行程安排" />
+      <view class="card pad" wx:for="{{days}}" wx:key="index">
+        <view class="day-name" wx:if="{{item.name}}">{{item.name}}</view>
+        <view class="it-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="index">
+          <text class="it-time">{{it.time}}</text>
+          <text class="it-text">{{it.text}}</text>
+        </view>
+      </view>
+    </block>
+
+    <section-title emoji="🎒" title="本周必带装备（只读）" />
+    <view class="card pad">
+      <view class="gear-group-title">🎒 基础装备（每次必带）</view>
+      <check-row wx:for="{{gearBase}}" wx:key="idx" text="{{item.text}}" checked="{{false}}" disabled="{{true}}" />
+      <view class="gear-group-title">⭐ 本周特需</view>
+      <check-row wx:for="{{gearSpecial}}" wx:key="idx" text="{{item.text}}" checked="{{false}}" disabled="{{true}}" />
+    </view>
+
+    <block wx:if="{{plan.safety && plan.safety.length}}">
+      <section-title emoji="🛡️" title="安全要点" />
+      <view>
+        <view class="safety-row" wx:for="{{plan.safety}}" wx:key="*this">🛡️ {{item}}</view>
+      </view>
+    </block>
+
+    <block wx:if="{{plan.review && plan.review.length}}">
+      <section-title emoji="📝" title="回顾问题" />
+      <view class="review-box">
+        <view wx:for="{{plan.review}}" wx:key="*this">？{{item}}</view>
+      </view>
+    </block>
+
+    <view class="bottom-gap"></view>
+  </view>
+
+  <view class="bottom-bar">
+    <button class="btn-primary" wx:if="{{!joinedTripId}}" bindtap="openJoin">加入我的出行</button>
+    <button class="btn-sun" wx:else bindtap="goTrip">查看我的出行</button>
+  </view>
+
+  <view class="mask" wx:if="{{showJoin}}" bindtap="closeJoin">
+    <view class="join-panel" catchtap="noop">
+      <view class="join-title">选择出发日期</view>
+      <picker mode="date" value="{{joinDate}}" bindchange="onJoinDateChange">
+        <view class="join-date">{{joinDate}} 🔽</view>
+      </picker>
+      <button class="btn-primary" bindtap="confirmJoin">确认加入</button>
+    </view>
+  </view>
+</view>

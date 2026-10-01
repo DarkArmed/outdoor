@@ -1,0 +1,9 @@
+.sec-title { display: flex; align-items: center; margin: 36rpx 0 16rpx; }
+.sec-emoji { font-size: 40rpx; margin-right: 12rpx; }
+.sec-text {
+  font-size: 34rpx;
+  font-weight: 800;
+  border-left: 10rpx solid var(--sun);
+  border-radius: 4rpx;
+  padding-left: 14rpx;
+}

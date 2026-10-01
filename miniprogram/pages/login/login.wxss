@@ -1,0 +1,47 @@
+.login-page {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 48rpx 48rpx;
+  background: linear-gradient(180deg, var(--sky) 0%, var(--paper) 45%);
+}
+
+.brand { text-align: center; }
+.scene-emoji { font-size: 88rpx; margin: 0 12rpx; }
+.brand-title {
+  font-size: 48rpx;
+  font-weight: 800;
+  margin-top: 24rpx;
+  text-shadow: 4rpx 4rpx 0 var(--sun);
+}
+.brand-sub { margin-top: 12rpx; color: #4A5568; font-size: 28rpx; }
+
+.login-btn {
+  width: 100%;
+  margin-top: 140rpx;
+  background: var(--grass-dk);
+  color: #fff;
+  font-weight: 800;
+  font-size: 34rpx;
+  border-radius: 999rpx;
+  padding: 22rpx 0;
+  box-shadow: 0 8rpx 0 rgba(76, 175, 80, 0.4);
+}
+.login-btn::after { border: none; }
+
+.login-error {
+  margin-top: 32rpx;
+  background: var(--safety-bg);
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+  font-size: 26rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10rpx;
+}
+.login-retry { color: var(--sky-deep); font-weight: 700; }
+
+.login-note { margin-top: auto; padding-top: 48rpx; font-size: 24rpx; }
