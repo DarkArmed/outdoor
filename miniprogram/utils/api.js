@@ -75,10 +75,6 @@ module.exports = {
   updateTaskStates: (tripId, items) => request({ path: `/api/trips/${tripId}/tasks`, method: 'PUT', data: { items } }),
   // 打卡 / 徽章 / 里程碑
   checkin: (tripId) => request({ path: `/api/trips/${tripId}/checkin`, method: 'POST' }),
-  unlockBadge: (tripId, badgeId) => request({
-    path: `/api/trips/${tripId}/badges/${encodeURIComponent(badgeId)}`,
-    method: 'POST',
-  }),
   fetchMilestones: () => request({ path: '/api/milestones' }),
   fetchMyBadges: () => request({ path: '/api/me/badges' }),
   // 画像（404 = 未设置）

@@ -254,40 +254,47 @@ Page({
   },
 
   async doCheckin() {
-    if (this.data.checking) return;
+    if (this.data.checking || !this.data.trip || this.data.trip.status === 'done') return;
     this.setData({ holding: false, checking: true });
+    // 读取失败不能当成「之前没有徽章」，否则会把旧里程碑误报为新增。
+    let beforeBadges = null;
+    try {
+      beforeBadges = await api.fetchMyBadges();
+    } catch (err) {
+      console.error(err);
+    }
     try {
       await api.checkin(this.tripId);
-      const badge = this.data.content.badge;
-      if (badge) {
-        await api.unlockBadge(this.tripId, badge.name).catch((e) => console.error(e));
-      }
-      // 本地评估里程碑：用最新出行列表（含本次）+ 已解锁集合，满足则逐个解锁
-      let newMilestones = [];
-      try {
-        const [milestones, myBadges, trips] = await Promise.all([
-          api.fetchMilestones(),
-          api.fetchMyBadges(),
-          api.fetchTrips(),
-        ]);
-        const doneTrips = (trips || []).filter((t) => t.status === 'done');
-        const unlockedIds = (myBadges || []).map((b) => b.badge_id);
-        newMilestones = badges.evalMilestones(milestones, doneTrips, unlockedIds);
-        for (const m of newMilestones) {
-          await api.unlockBadge(this.tripId, m.id).catch((e) => console.error(e));
-        }
-      } catch (e) {
-        console.error(e);
-      }
-      const fullStar = this.data.taskRows.length > 0 && this.data.taskRows.every((r) => r.checked);
-      this.setData({
-        checking: false,
-        'trip.status': 'done',
-        celebrate: { badge, fullStar, newMilestones },
-      });
     } catch (err) {
       this.setData({ checking: false });
       wx.showToast({ title: (err && err.message) || '打卡失败，请重试', icon: 'none' });
+      return;
+    }
+
+    // 打卡响应已确认保存；辅助刷新失败不能再将它显示为打卡失败。
+    this.setData({ 'trip.status': 'done' });
+    let newMilestones = [];
+    let badgesUnavailable = beforeBadges === null;
+    if (!badgesUnavailable) {
+      try {
+        const [milestones, afterBadges] = await Promise.all([
+          api.fetchMilestones(),
+          api.fetchMyBadges(),
+        ]);
+        newMilestones = badges.newMilestones(milestones, beforeBadges, afterBadges);
+      } catch (err) {
+        badgesUnavailable = true;
+        console.error(err);
+      }
+    }
+    const badge = this.data.content.badge;
+    const fullStar = this.data.taskRows.length > 0 && this.data.taskRows.every((r) => r.checked);
+    this.setData({
+      checking: false,
+      celebrate: { badge, fullStar, newMilestones },
+    });
+    if (badgesUnavailable) {
+      wx.showToast({ title: '打卡已完成，徽章请稍后到「我的」查看', icon: 'none' });
     }
   },
 
