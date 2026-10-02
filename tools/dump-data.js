@@ -1,13 +1,13 @@
-// Dump existing site/js/data/*.js content as JSON to stdout.
-// Usage: node tools/dump-site-data.js
+// Dump existing data/*.js content as JSON to stdout.
+// Usage: node tools/dump-data.js
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const SITE_JS = path.join(__dirname, '..', 'site', 'js');
+const DATA_DIR = path.join(__dirname, '..', 'data');
 
 function loadScript(ctx, name) {
-  const p = path.join(SITE_JS, name);
+  const p = path.join(DATA_DIR, name);
   if (!fs.existsSync(p)) {
     console.error(`warn: ${p} not found, skipping`);
     return;
@@ -18,21 +18,17 @@ function loadScript(ctx, name) {
 function loadDataScripts() {
   const ctx = {};
   const scripts = [
-    'scenes.js',
-    'maps.js',
-    'data/profile.js',
-    'data/data-a.js',
-    'data/data-b.js',
-    'data/data-c.js',
-    'data/data-d.js',
-    'data/routes.js',
-    'data/network.js',
+    'data-a.js',
+    'data-b.js',
+    'data-c.js',
+    'data-d.js',
+    'routes.js',
+    'network.js',
   ];
   for (const s of scripts) {
     loadScript(ctx, s);
   }
   return {
-    profile: ctx.PROFILE || null,
     plans: ctx.PLANS || [],
     milestones: ctx.MILESTONES || [],
     routes: ctx.ROUTES || {},

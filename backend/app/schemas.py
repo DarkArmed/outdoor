@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 # ---------- Auth ----------
@@ -25,7 +25,9 @@ class UserLogin(BaseModel):
 
 class UserOut(BaseModel):
     id: int
-    email: EmailStr
+    # Stored legacy/seed identities may use reserved local domains.
+    # Registration input remains validated by EmailStr.
+    email: str
     is_active: bool
     created_at: datetime
 
@@ -79,6 +81,12 @@ class PlanOut(BaseModel):
     day_names: list[str]
     drive: dict[str, Any]
     hike: dict[str, Any]
+
+    @field_validator("hike", mode="before")
+    @classmethod
+    def empty_hike(cls, value):
+        return {} if value is None else value
+
     gear: dict[str, list[str]]
     safety: list[str]
     review: list[str]
@@ -131,6 +139,12 @@ class RouteOut(BaseModel):
     generated_at: datetime | None
     drive: dict[str, Any]
     hike: dict[str, Any]
+
+    @field_validator("hike", mode="before")
+    @classmethod
+    def empty_hike(cls, value):
+        return {} if value is None else value
+
 
     model_config = ConfigDict(from_attributes=True)
 

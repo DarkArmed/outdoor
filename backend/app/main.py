@@ -8,7 +8,7 @@ from app.auth import get_current_user
 from app.config import get_settings
 from app.database import Base, engine, get_db
 from app.models import BadgeUnlock, User
-from app.routers import auth, milestones, plans, profile, routes, state, trips, users
+from app.routers import legacy, auth, milestones, plans, profile, routes, state, trips, users
 from app.schemas import BadgeUnlockOut, UserOut
 
 settings = get_settings()
@@ -32,6 +32,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router)
+app.include_router(legacy.router)
 app.include_router(users.router)
 app.include_router(profile.router)
 app.include_router(plans.router)

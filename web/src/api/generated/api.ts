@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/legacy/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Legacy */
+        post: operations["import_legacy_api_legacy_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/me": {
         parameters: {
             query?: never;
@@ -204,6 +221,23 @@ export interface paths {
         };
         /** Get Network */
         get: operations["get_network_api_network_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/routes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Routes */
+        get: operations["list_routes_api_routes_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -415,6 +449,31 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LegacyItem */
+        LegacyItem: {
+            /** Plan Id */
+            plan_id: string;
+            /** Gear */
+            gear?: {
+                [key: string]: boolean;
+            };
+            /** Tasks */
+            tasks?: {
+                [key: string]: boolean;
+            };
+            /**
+             * Done
+             * @default false
+             */
+            done: boolean;
+        };
+        /** LegacyPayload */
+        LegacyPayload: {
+            /** Plans */
+            plans: components["schemas"]["LegacyItem"][];
+            /** Badges */
+            badges?: string[];
+        };
         /** MilestoneOut */
         MilestoneOut: {
             /** Id */
@@ -424,7 +483,7 @@ export interface components {
             /** Name */
             name: string;
             /** Rule */
-            rule: Record<string, never>;
+            rule: Record<string, unknown>;
         };
         /** NetworkOut */
         NetworkOut: {
@@ -433,7 +492,7 @@ export interface components {
             /** Bbox */
             bbox: number[];
             /** Ways */
-            ways: Record<string, never>[];
+            ways: Record<string, unknown>[];
         };
         /** PlanOut */
         PlanOut: {
@@ -464,9 +523,9 @@ export interface components {
             /** Day Names */
             day_names: string[];
             /** Drive */
-            drive: Record<string, never>;
+            drive: Record<string, unknown>;
             /** Hike */
-            hike: Record<string, never>;
+            hike: Record<string, unknown>;
             /** Gear */
             gear: {
                 [key: string]: string[];
@@ -501,9 +560,9 @@ export interface components {
             /** Family Travelers */
             family_travelers?: string[];
             /** Child */
-            child?: Record<string, never>;
+            child?: Record<string, unknown>;
             /** Prefs */
-            prefs?: Record<string, never>;
+            prefs?: Record<string, unknown>;
             /** Id */
             id: number;
             /** User Id */
@@ -518,9 +577,9 @@ export interface components {
             /** Family Travelers */
             family_travelers?: string[] | null;
             /** Child */
-            child?: Record<string, never> | null;
+            child?: Record<string, unknown> | null;
             /** Prefs */
-            prefs?: Record<string, never> | null;
+            prefs?: Record<string, unknown> | null;
         };
         /** RouteOut */
         RouteOut: {
@@ -531,9 +590,9 @@ export interface components {
             /** Generated At */
             generated_at: string | null;
             /** Drive */
-            drive: Record<string, never>;
+            drive: Record<string, unknown>;
             /** Hike */
-            hike: Record<string, never>;
+            hike: Record<string, unknown>;
         };
         /** TaskItemState */
         TaskItemState: {
@@ -564,7 +623,7 @@ export interface components {
             /** Planned Date */
             planned_date?: string | null;
             /** Overrides */
-            overrides?: Record<string, never>;
+            overrides?: Record<string, unknown>;
         };
         /** TripDetailOut */
         TripDetailOut: {
@@ -575,9 +634,9 @@ export interface components {
             /** Plan Id */
             plan_id: string;
             /** Snapshot */
-            snapshot: Record<string, never>;
+            snapshot: Record<string, unknown>;
             /** Overrides */
-            overrides: Record<string, never>;
+            overrides: Record<string, unknown>;
             /** Status */
             status: string;
             /** Planned Date */
@@ -593,7 +652,7 @@ export interface components {
              */
             updated_at: string;
             /** Content */
-            content: Record<string, never>;
+            content: Record<string, unknown>;
         };
         /** TripOut */
         TripOut: {
@@ -604,9 +663,9 @@ export interface components {
             /** Plan Id */
             plan_id: string;
             /** Snapshot */
-            snapshot: Record<string, never>;
+            snapshot: Record<string, unknown>;
             /** Overrides */
-            overrides: Record<string, never>;
+            overrides: Record<string, unknown>;
             /** Status */
             status: string;
             /** Planned Date */
@@ -627,7 +686,7 @@ export interface components {
             /** Planned Date */
             planned_date?: string | null;
             /** Overrides */
-            overrides?: Record<string, never> | null;
+            overrides?: Record<string, unknown> | null;
             /** Status */
             status?: string | null;
         };
@@ -635,10 +694,7 @@ export interface components {
         UserOut: {
             /** Id */
             id: number;
-            /**
-             * Email
-             * Format: email
-             */
+            /** Email */
             email: string;
             /** Is Active */
             is_active: boolean;
@@ -758,6 +814,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    import_legacy_api_legacy_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LegacyPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1137,6 +1226,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NetworkOut"];
+                };
+            };
+        };
+    };
+    list_routes_api_routes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RouteOut"][];
                 };
             };
         };

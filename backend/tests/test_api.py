@@ -101,3 +101,13 @@ def test_checkin(client, db_session, user):
 
     r2 = client.get(f"/api/trips/{trip_id}", headers=auth_headers(user))
     assert r2.json()["status"] == "done"
+
+
+def test_seed_default_account_can_log_in_and_load_identity(client, db_session):
+    from app.seed import seed_default_user
+    seed_default_user(db_session, None)
+    response = client.post('/api/auth/login', data={'username': 'default@outdoor.local', 'password': 'outdoor'})
+    assert response.status_code == 200
+    identity = client.get('/api/auth/me', headers={'Authorization': 'Bearer ' + response.json()['access_token']})
+    assert identity.status_code == 200
+    assert identity.json()['email'] == 'default@outdoor.local'

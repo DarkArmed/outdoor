@@ -24,3 +24,28 @@ export function useTrip(id?: number) {
   const { user } = useAuth()
   return useSWR(user && id ? ['/trips', user.id, id] : null, () => api.fetchTrip(id!))
 }
+
+export function useRoutes() {
+  const { user } = useAuth()
+  return useSWR(user ? ['/routes', user.id] : null, api.fetchRoutes)
+}
+export function useNetwork() {
+  const { user } = useAuth()
+  return useSWR(user ? ['/network', user.id] : null, api.fetchNetwork, { shouldRetryOnError: false })
+}
+export function useMilestones() {
+  const { user } = useAuth()
+  return useSWR(user ? ['/milestones', user.id] : null, api.fetchMilestones)
+}
+export function useMyBadges() {
+  const { user } = useAuth()
+  return useSWR(user ? ['/me/badges', user.id] : null, api.fetchMyBadges)
+}
+export function useGearStates(id?: number) {
+  const { user } = useAuth()
+  return useSWR(user && id ? ['/gear', user.id, id] : null, () => api.fetchGearStates(id!))
+}
+export function useTaskStates(id?: number) {
+  const { user } = useAuth()
+  return useSWR(user && id ? ['/tasks', user.id, id] : null, () => api.fetchTaskStates(id!))
+}
