@@ -47,6 +47,8 @@ function PlanDetail() {
   const badges = useMyBadges();
   const taskStates = useTaskStates(trip?.id);
   const [checkedIn, setCheckedIn] = useState(false);
+  const [completedTripId, setCompletedTripId] = useState<number>();
+  const [checkinRefreshFailed, setCheckinRefreshFailed] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const root = contentRef.current;
@@ -80,7 +82,8 @@ function PlanDetail() {
   }, [template, trip]);
   const [creating, setCreating] = useState(false);
   const [actionError, setActionError] = useState("");
-  if (tripsError) return <p role="alert">出行加载失败，请刷新重试。</p>;
+  if (tripsError && !trips)
+    return <p role="alert">出行加载失败，请刷新重试。</p>;
   if (isLoading || tripsLoading)
     return <div className="p-8 text-center">加载中…</div>;
   if (error || !template)
@@ -98,6 +101,9 @@ function PlanDetail() {
       </p>
     );
   const plan = trip ? tripContent(trip, template) : template;
+  const done = Boolean(
+    trip && (trip.status === "done" || completedTripId === trip.id),
+  );
   const allTasksChecked = Boolean(
     plan.tasks.length &&
     plan.tasks.every((_, i) =>
@@ -126,17 +132,27 @@ function PlanDetail() {
     if (!trip) return;
     const previous = new Set(badges.data?.map((b) => b.badge_id) || []);
     await checkinTrip(trip.id);
-    const [, , unlocked, rules] = await Promise.all([
+    // The write is committed; a later read failure must not report it as unsaved.
+    setCompletedTripId(trip.id);
+    setCheckinRefreshFailed(false);
+    const results = await Promise.allSettled([
       mutateTrips(),
       detail.mutate(),
       badges.mutate(),
       fetchMilestones(),
     ]);
+    const [, , unlocked, rules] = results;
+    setCheckinRefreshFailed(
+      results.some((result) => result.status === "rejected"),
+    );
     setNewMilestones(
-      rules.filter(
-        (m) =>
-          !previous.has(m.id) && unlocked?.some((b) => b.badge_id === m.id),
-      ),
+      rules.status === "fulfilled" && unlocked.status === "fulfilled"
+        ? rules.value.filter(
+            (m) =>
+              !previous.has(m.id) &&
+              unlocked.value?.some((b) => b.badge_id === m.id),
+          )
+        : [],
     );
     setCheckedIn(true);
   };
@@ -163,9 +179,7 @@ function PlanDetail() {
             <span className="badge">📍 {plan.location}</span>
             <span className="badge">🚗 {String(plan.drive?.time || "")}</span>
             {plan.mom && <span className="badge badge-mom">👩 妈妈同行</span>}
-            {trip?.status === "done" && (
-              <span className="badge">✅ 已打卡</span>
-            )}
+            {trip && done && <span className="badge">✅ 已打卡</span>}
           </div>
         </section>
         <SectionNav hasTasks={plan.tasks.length > 0} />
@@ -236,14 +250,16 @@ function PlanDetail() {
         </section>
         <section id="checkin">
           {trip ? (
-            plan.badge && (
-              <CheckinButton
-                key={trip.id}
-                done={trip.status === "done"}
-                badge={{ icon: plan.badge.icon, name: plan.badge.name }}
-                onCheckin={handleCheckin}
-              />
-            )
+            <CheckinButton
+              key={trip.id}
+              done={done}
+              badge={
+                plan.badge
+                  ? { icon: plan.badge.icon, name: plan.badge.name }
+                  : undefined
+              }
+              onCheckin={handleCheckin}
+            />
           ) : (
             <button
               className="checkin-btn"
@@ -254,6 +270,11 @@ function PlanDetail() {
             </button>
           )}
           {actionError && <p role="alert">{actionError}</p>}
+          {completedTripId === trip?.id && checkinRefreshFailed && (
+            <p role="status">
+              打卡已保存，部分最新数据加载失败，请刷新页面重试。
+            </p>
+          )}
         </section>
         {checkedIn && plan.badge && (
           <BadgeCelebration
