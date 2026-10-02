@@ -237,7 +237,7 @@ Page({
 
   // 长按 2 秒打卡
   startHold() {
-    if (!this.data.content.badge || this.data.trip.status === 'done' || this.data.checking) return;
+    if (!this.data.trip || this.data.trip.status === 'done' || this.data.checking) return;
     this.setData({ holding: true });
     this._holdTimer = setTimeout(() => {
       this._holdTimer = null;
@@ -287,7 +287,7 @@ Page({
         console.error(err);
       }
     }
-    const badge = this.data.content.badge;
+    const badge = this.data.content.badge || null;
     const fullStar = this.data.taskRows.length > 0 && this.data.taskRows.every((r) => r.checked);
     this.setData({
       checking: false,

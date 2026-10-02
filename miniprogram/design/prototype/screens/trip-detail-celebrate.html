@@ -215,5 +215,15 @@
       </div>
     </div>
   </div>
+<script>
+  if (new URLSearchParams(location.search).get('badge') === 'none') {
+    document.querySelector('.chip-badge').hidden = true;
+    document.querySelector('.btn-checkin').textContent = '✅ 已完成本次冒险';
+    document.querySelector('.pop h2').textContent = '已完成本次冒险';
+    document.querySelector('.sub2').hidden = true;
+    document.querySelector('.badge-circle').textContent = '✅';
+    document.querySelector('.badge-name').hidden = true;
+  }
+</script>
 </body>
 </html>

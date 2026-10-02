@@ -59,6 +59,7 @@ Tab 栏（计划库 / 我的出行 / 我的）在 2/4/5/8 屏底部绘制，纯�
 - **画廊**：浏览器直接双击打开 `prototype/index.html`，8 屏垂直排列、按内容自适应高度。
   - iframe 高度自适应依赖 JS 读取 `contentDocument.body.scrollHeight`；若 Chrome 拦截 file:// 跨帧读取，会回退到默认高度 900px。此时可换 Firefox，或起一个静态服务器：`npx serve miniprogram/design/prototype` 后访问 `http://localhost:3000`。
 - **单屏**：直接双击打开 `prototype/screens/` 下任意文件。
+- **无活动徽章变体**：打开 `screens/trip-detail.html?badge=none` 或 `screens/trip-detail-celebrate.html?badge=none`，查看备用方案的打卡按钮与完成确认。此类出行仍可打卡、获得后端颁发的里程碑，页面不显示不存在的活动徽章名。
 
 ## 如何导出 PNG
 
@@ -78,5 +79,6 @@ npx playwright screenshot --viewport-size=375,900 --full-page \
 
 - 页面在原型中**完整展开无内部滚动**；因此「底部固定操作栏 / 底部 Tab 栏」在原型中按流式呈现在页面末尾，实现时对应 `position: fixed`。
 - 任务 / 装备勾选为**纯 CSS**（`input:checked` 样式），零 JS；实现时的进度条计数、长按 2 秒打卡动画、锚点滚动高亮为 JS 逻辑。
+- 打卡按钮适用于所有已创建的出行，包括无活动徽章的备用方案。庆祝区有活动徽章时显示徽章图案与名称，无徽章时用 ✅ 和「已完成本次冒险」确认成功；新增里程碑区及查看徽章墙入口保留。两份详情原型用查询参数切换该文案变体，现有 PNG 截图仍为有活动徽章的示例。
 - 路线图为内联 SVG 示意（浅色底 + 折线 + 标记）；实现时替换为小程序原生 map 组件（驾车线 + 地标 / 徒步途径点），保留「指路参考 · 导航请用高德 App」提示。
 - 内容示例取自真实赛季计划（白河湾 9/5、神堂峪 9/12、华海田园 9/19、西山赏秋 10/10、白河湾收官露营已归档）。

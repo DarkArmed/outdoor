@@ -238,5 +238,11 @@
     <button class="btn-checkin">🏁 完成本次冒险（长按 2 秒打卡）</button>
     <p class="hint2">长按打卡解锁徽章 🌊 踩水小能手 · 任务全完成可得满星版</p>
   </div>
+<script>
+  if (new URLSearchParams(location.search).get('badge') === 'none') {
+    document.querySelector('.chip-badge').hidden = true;
+    document.querySelector('.hint2').textContent = '完成后同步本次出行记录';
+  }
+</script>
 </body>
 </html>

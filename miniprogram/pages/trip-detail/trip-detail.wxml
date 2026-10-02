@@ -143,8 +143,8 @@
     </view>
   </scroll-view>
 
-  <!-- 打卡区（content.badge 存在时显示） -->
-  <view class="bottom-bar" wx:if="{{content.badge}}">
+  <!-- 所有出行均可打卡；备用方案可以没有活动徽章。 -->
+  <view class="bottom-bar">
     <block wx:if="{{trip.status !== 'done'}}">
       <button
         class="checkin-btn {{holding ? 'holding' : ''}}"
@@ -156,17 +156,18 @@
         <view class="checkin-progress"></view>
         <text class="checkin-text">{{checking ? '打卡中…' : '🏁 完成本次冒险（长按 2 秒打卡）'}}</text>
       </button>
-      <view class="checkin-hint muted">完成后解锁徽章 {{content.badge.icon}} {{content.badge.name}}</view>
+      <view class="checkin-hint muted" wx:if="{{content.badge}}">完成后解锁徽章 {{content.badge.icon}} {{content.badge.name}}</view>
+      <view class="checkin-hint muted" wx:else>完成后同步本次出行记录</view>
     </block>
-    <view class="done-bar" wx:else>✅ 已完成本次冒险 · {{content.badge.icon}} {{content.badge.name}}</view>
+    <view class="done-bar" wx:else>✅ 已完成本次冒险<text wx:if="{{content.badge}}"> · {{content.badge.icon}} {{content.badge.name}}</text></view>
   </view>
 
   <!-- 庆祝弹窗 -->
   <view class="celebrate-mask" wx:if="{{celebrate}}" catchtouchmove="noop">
     <view class="celebrate-card {{celebrate.fullStar ? 'full-star' : ''}}">
-      <view class="celebrate-big">{{celebrate.badge.icon}}</view>
-      <view class="celebrate-title">🎉 解锁徽章！</view>
-      <view class="celebrate-name">{{celebrate.badge.name}}</view>
+      <view class="celebrate-big">{{celebrate.badge ? celebrate.badge.icon : '✅'}}</view>
+      <view class="celebrate-title">{{celebrate.badge ? '🎉 解锁徽章！' : '已完成本次冒险'}}</view>
+      <view class="celebrate-name" wx:if="{{celebrate.badge}}">{{celebrate.badge.name}}</view>
       <view class="celebrate-star" wx:if="{{celebrate.fullStar}}">🌟 满星通关！</view>
       <view class="celebrate-ms" wx:if="{{celebrate.newMilestones.length}}">
         <view class="ms-line">同时解锁里程碑：</view>

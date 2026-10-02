@@ -8,7 +8,7 @@ const pageSource = fs.readFileSync(path.join(__dirname, '../pages/trip-detail/tr
 const badgeHelpers = require('../utils/badges');
 const planHelpers = require('../utils/plan');
 
-function createPage(overrides = {}) {
+function createPage(overrides = {}, clock = { setTimeout, clearTimeout }) {
   const calls = [];
   const toasts = [];
   const errors = [];
@@ -45,8 +45,8 @@ function createPage(overrides = {}) {
     },
     wx: { showToast: (toast) => toasts.push(toast) },
     console: { error: (err) => errors.push(err) },
-    setTimeout,
-    clearTimeout,
+    setTimeout: clock.setTimeout,
+    clearTimeout: clock.clearTimeout,
   });
   page.data = {
     ...page.data,
@@ -176,4 +176,51 @@ test('打卡前徽章读取失败不阻止打卡，也不将未知的旧徽章�
   assert.equal(page.data.celebrate.newMilestones.length, 0);
   assert.match(toasts[0].title, /打卡已完成/);
   assert.deepEqual(names(calls), ['fetchMyBadges', 'checkin']);
+});
+
+for (const badge of [null, undefined]) {
+  test(`无活动徽章（${badge}）的出行仍可长按打卡并显示新增里程碑`, async () => {
+    const timers = [];
+    const { page, calls } = createPage({}, {
+      setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; },
+      clearTimeout: () => {},
+    });
+    page.data.content.badge = badge;
+    page.data.taskRows = [];
+    let completion;
+    const doCheckin = page.doCheckin;
+    page.doCheckin = () => { completion = doCheckin.call(page); return completion; };
+
+    page.startHold();
+    assert.equal(page.data.holding, true);
+    assert.equal(timers.length, 1);
+    assert.equal(timers[0].delay, 2000);
+    assert.equal(calls.length, 0);
+    timers[0].callback();
+    await completion;
+
+    assert.equal(page.data.trip.status, 'done');
+    assert.equal(page.data.holding, false);
+    assert.equal(page.data.checking, false);
+    assert.equal(page.data.celebrate.badge, null);
+    assert.equal(page.data.celebrate.fullStar, false);
+    assert.deepEqual(page.data.celebrate.newMilestones.map((m) => m.id), ['first_hike']);
+    assert.equal(names(calls).filter((name) => name === 'checkin').length, 1);
+    assert.equal(names(calls).includes('unlockBadge'), false);
+  });
+}
+
+test('无徽章出行在两秒前松手仍会取消打卡', () => {
+  const cancelled = [];
+  const { page, calls } = createPage({}, {
+    setTimeout: () => 42,
+    clearTimeout: (id) => cancelled.push(id),
+  });
+  page.data.content.badge = null;
+  page.startHold();
+  page.endHold();
+  assert.deepEqual(cancelled, [42]);
+  assert.equal(page.data.holding, false);
+  assert.equal(page.data.trip.status, 'planned');
+  assert.equal(calls.length, 0);
 });
