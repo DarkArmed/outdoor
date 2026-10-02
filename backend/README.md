@@ -41,6 +41,8 @@ SECRET_KEY=dev-secret-change-me
 alembic upgrade head
 ```
 
+`20261003_merge_web_wechat` joins the existing Web legacy-import and WeChat-login migration histories without rewriting either revision. Fresh databases and databases already at either previous head use the same command above; existing user and import data are retained.
+
 ## Seed data
 
 Import public data from `data/` and create default user from `config/profile.json`:

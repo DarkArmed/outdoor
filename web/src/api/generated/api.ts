@@ -55,6 +55,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/wechat/miniapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Wechat Miniapp Login */
+        post: operations["wechat_miniapp_login_api_auth_wechat_miniapp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/legacy/import": {
         parameters: {
             query?: never;
@@ -703,6 +720,8 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** Nickname */
+            nickname?: string | null;
         };
         /** UserRegister */
         UserRegister: {
@@ -722,6 +741,26 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** WechatLoginIn */
+        WechatLoginIn: {
+            /** Code */
+            code: string;
+            /** Nickname */
+            nickname?: string | null;
+        };
+        /** WechatLoginOut */
+        WechatLoginOut: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             */
+            token_type: string;
+            /** Is New User */
+            is_new_user: boolean;
+            user: components["schemas"]["UserOut"];
         };
     };
     responses: never;
@@ -814,6 +853,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    wechat_miniapp_login_api_auth_wechat_miniapp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WechatLoginIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WechatLoginOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
