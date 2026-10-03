@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.auth import get_password_hash
+from app.config import get_settings
 from app.database import Base, SessionLocal, engine
 from app.models import (
     BadgeUnlock,
@@ -194,6 +195,8 @@ def seed_default_trips(db: Session, user: User, plans: list[dict]) -> None:
 
 
 def seed_all() -> None:
+    if get_settings().app_env == "production":
+        raise RuntimeError("Legacy seed is disabled in production; use an explicit data import")
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:

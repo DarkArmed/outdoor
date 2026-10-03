@@ -16,6 +16,7 @@
 | [采购清单](equipment/采购清单.md) | 待购装备的优先级采购单 |
 | [周计划](/plans/) | 按周生成的具体活动方案 |
 | [周计划模板](plans/周计划模板.md) | 新增一周时复制此模板 |
+| 📦 [容器化本机验证](docs/tech/容器化本机验证.md) | Docker Compose 本机启动、验证结果与操作步骤 |
 | [backend/](backend/) | FastAPI 后端服务（多用户、持久化、方案/出行计划解耦）|
 | [miniprogram/](miniprogram/) | 微信小程序客户端（原生、无构建；设计原型见 `miniprogram/design/`）|
 
