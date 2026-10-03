@@ -58,6 +58,13 @@ outdoor/
 - 注意：高德个人开发者 QPS 低，amap.js 已内置限速重试；新增计划后重跑 pipeline 即可（有缓存，增量快）。Overpass 必须 POST + 自定义 UA，否则 406。
 - 无路线数据的计划自动回退卡通示意图。
 
+## 小程序（miniprogram/）
+
+- 原生微信小程序（WXML/WXSS/JS），**无构建链、无 npm 依赖**；微信开发者工具直接导入 `miniprogram/`。
+- 后端地址在 `miniprogram/config.js`（开发默认 `http://localhost:8000`）；微信登录走 `POST /api/auth/wechat/miniapp`（后端配置见 `backend/.env.example` 的 `WECHAT_MINIAPP_*`，未配置且 `DEBUG=true` 时走 mock）。
+- 机制与约定（认证流程、API 用法、gear 扁平索引、里程碑评估、坐标转换）见 `docs/tech/小程序.md`；需求 PRD-005、选型 ADR-004。
+- UI 迭代以 `miniprogram/design/prototype/` 的 HTML 原型为准（先改原型再改页面）。
+
 ## 用户配置（config/profile.json）
 
 - **流水线与默认账号种子来源**：家位置、出行成员、孩子信息（小名/出生年份/耐力/兴趣/过敏）、出行偏好；gitignore，模板为 `config/profile.example.json`。

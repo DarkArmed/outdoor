@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>登录页 · 小宝的户外大冒险</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto; min-height: 100vh;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .hero {
+    text-align: center;
+    padding: 64px 24px 28px;
+    background: linear-gradient(180deg, #7ED6FF 0%, #EAF7FF 55%, #FFFDF5 100%);
+    border-radius: 0 0 32px 32px;
+  }
+  .hero .scene { font-size: 52px; letter-spacing: 6px; }
+  .hero .scene span { display: inline-block; margin: 0 2px; text-shadow: 0 3px 0 rgba(45,55,72,.10); }
+  .hero h1 { font-size: 26px; margin-top: 14px; text-shadow: 2px 2px 0 #FFD93D; }
+  .hero .sub { margin-top: 8px; color: #4A5568; font-size: 14px; }
+  .feats { display: flex; gap: 10px; padding: 22px 16px 0; }
+  .feat {
+    flex: 1; background: #FFFFFF; border-radius: 16px; box-shadow: 0 2px 8px rgba(45,55,72,.08);
+    padding: 14px 6px 12px; text-align: center;
+  }
+  .feat .ico { font-size: 26px; }
+  .feat .t { font-weight: 700; font-size: 13px; margin-top: 4px; }
+  .feat .d { color: #718096; font-size: 11px; margin-top: 2px; }
+  .login-area { padding: 34px 24px 0; }
+  .btn-wx {
+    display: block; width: 100%; border: none; cursor: pointer;
+    background: #4CAF50; color: #fff; font-size: 17px; font-weight: 800;
+    padding: 14px 0; border-radius: 14px;
+    box-shadow: 0 4px 0 #3B8C40;
+    font-family: inherit;
+  }
+  .btn-wx:active { transform: translateY(2px); box-shadow: 0 2px 0 #3B8C40; }
+  .login-note { text-align: center; color: #718096; font-size: 12px; margin-top: 12px; }
+  .agree { text-align: center; color: #A0AEC0; font-size: 11px; margin-top: 22px; padding-bottom: 40px; }
+  .agree em { font-style: normal; color: #4FC3F7; }
+</style>
+</head>
+<body>
+  <section class="hero">
+    <div class="scene"><span>🏔️</span><span>🌲</span><span>⛺</span><span>🌊</span></div>
+    <h1>小宝的户外大冒险</h1>
+    <p class="sub">爸爸 + 小宝（7 岁）· 北京出发 · 每周末一次</p>
+  </section>
+
+  <section class="feats">
+    <div class="feat"><div class="ico">📖</div><div class="t">浏览方案</div><div class="d">赛季计划随手看</div></div>
+    <div class="feat"><div class="ico">🎒</div><div class="t">勾选装备</div><div class="d">出发前不遗漏</div></div>
+    <div class="feat"><div class="ico">🏅</div><div class="t">打卡徽章</div><div class="d">每次冒险有收获</div></div>
+  </section>
+
+  <section class="login-area">
+    <button class="btn-wx">💬 微信一键登录</button>
+    <p class="login-note">首次登录自动创建账号，免注册、免密码</p>
+    <p class="agree">登录即代表同意 <em>《用户协议》</em> 与 <em>《隐私政策》</em></p>
+  </section>
+</body>
+</html>

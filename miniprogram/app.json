@@ -1,0 +1,45 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/plans/plans",
+    "pages/trips/trips",
+    "pages/me/me",
+    "pages/plan-detail/plan-detail",
+    "pages/trip-detail/trip-detail"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "户外大冒险",
+    "backgroundColor": "#FFFDF5",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#718096",
+    "selectedColor": "#2D3748",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/plans/plans",
+        "text": "计划库",
+        "iconPath": "assets/tab-plans-normal.png",
+        "selectedIconPath": "assets/tab-plans-selected.png"
+      },
+      {
+        "pagePath": "pages/trips/trips",
+        "text": "我的出行",
+        "iconPath": "assets/tab-trips-normal.png",
+        "selectedIconPath": "assets/tab-trips-selected.png"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的",
+        "iconPath": "assets/tab-me-normal.png",
+        "selectedIconPath": "assets/tab-me-selected.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

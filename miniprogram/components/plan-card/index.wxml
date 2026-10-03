@@ -1,0 +1,15 @@
+<view class="p-card card" bindtap="onTap">
+  <view class="p-art theme-{{plan.theme || 'default'}}">
+    <text class="p-art-emoji">{{plan.emoji || '🌲'}}</text>
+    <view class="p-status" wx:if="{{tripStatus === 'done'}}">✔ 已打卡</view>
+  </view>
+  <view class="p-body">
+    <view class="p-title">{{plan.title}}</view>
+    <view class="p-meta muted">📅 {{plan.date}} · 📍 {{plan.location}}</view>
+    <view class="p-badges">
+      <text class="badge {{typeCls}}">{{plan.type}}</text>
+      <text class="badge badge-drive" wx:if="{{plan.drive && plan.drive.time}}">🚗 {{plan.drive.time}}</text>
+      <text class="badge badge-mom" wx:if="{{plan.mom}}">👩 妈妈同行</text>
+    </view>
+  </view>
+</view>

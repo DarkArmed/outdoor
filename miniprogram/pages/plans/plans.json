@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "计划库",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "plan-card": "../../components/plan-card/index"
+  }
+}

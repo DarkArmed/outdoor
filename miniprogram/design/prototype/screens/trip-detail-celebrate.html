@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>出行详情 · 打卡庆祝</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto; position: relative;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .topbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px 8px; }
+  .topbar .back { font-size: 20px; font-weight: 800; }
+  .topbar .t { font-size: 16px; font-weight: 800; flex: 1; }
+  .topbar .ops { font-size: 12px; color: #718096; }
+  .topbar .ops b { color: #4FC3F7; font-weight: 700; }
+
+  .head-card {
+    margin: 0 14px 10px; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(45,55,72,.08); padding: 14px 16px;
+  }
+  .head-card h1 { font-size: 19px; }
+  .head-card .meta { color: #718096; font-size: 12px; margin-top: 2px; }
+  .head-card .row2 { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .chip-doing { font-size: 11px; font-weight: 800; color: #975A16; background: #FFFBEB; border: 1px solid #FFD93D; border-radius: 999px; padding: 2px 10px; }
+  .chip-badge { font-size: 11px; font-weight: 800; color: #fff; background: #FF8FAB; border-radius: 999px; padding: 2px 10px; }
+
+  .anchors { display: flex; gap: 6px; overflow-x: auto; padding: 4px 14px 10px; background: #FFFDF5; }
+  .anchors a {
+    white-space: nowrap; text-decoration: none; font-size: 12px; font-weight: 700;
+    color: #4A5568; background: #FFFFFF; border: 1px solid #E2E8F0;
+    padding: 4px 12px; border-radius: 999px;
+  }
+  .anchors a.on { background: #FFD93D; border-color: #FFD93D; color: #2D3748; }
+
+  .card {
+    margin: 0 14px 14px; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(45,55,72,.08); overflow: hidden;
+  }
+  .block { padding: 14px 16px; }
+  .block h2 { font-size: 16px; margin-bottom: 8px; }
+  .goal { background: #FFFBEB; border: 2px solid #FFD93D; }
+  .tips { background: #EBF8FF; border: 2px solid #4FC3F7; }
+  .tips li { margin-left: 20px; font-size: 13px; padding: 2px 0; }
+  .sub { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #718096; margin: -2px 0 8px; }
+  .sub b { color: #4CAF50; }
+  .ck { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-radius: 10px; }
+  .ck input { width: 21px; height: 21px; accent-color: #4CAF50; flex: 0 0 21px; }
+  .ck input:checked ~ .txt { color: #A0AEC0; text-decoration: line-through; }
+  .group-label { font-size: 12px; font-weight: 800; color: #718096; margin: 10px 0 0; }
+  .prog { background: #EDF2F7; border-radius: 999px; height: 14px; overflow: hidden; margin: 4px 0 6px; }
+  .prog i { display: block; height: 100%; background: linear-gradient(90deg, #7CDB6E, #4CAF50); border-radius: 999px; }
+  .prog-t { font-size: 12px; color: #4A5568; font-weight: 700; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .itinerary { position: relative; margin-left: 8px; padding-left: 24px; }
+  .itinerary::before {
+    content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px;
+    background: repeating-linear-gradient(180deg, #4CAF50 0 10px, transparent 10px 17px);
+  }
+  .it-item { position: relative; padding: 6px 0; font-size: 13px; }
+  .it-item::before {
+    content: ""; position: absolute; left: -25px; top: 12px;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #FFD93D; border: 3px solid #4CAF50;
+  }
+  .it-time { font-weight: 800; color: #4CAF50; margin-right: 6px; }
+  .map-head { padding: 14px 16px 0; font-size: 16px; font-weight: 800; }
+  .map-wrap { margin: 8px 14px 4px; border-radius: 12px; overflow: hidden; border: 1px solid #E2E8F0; }
+  .map-note { text-align: center; font-size: 11px; color: #718096; padding: 4px 0 12px; }
+  .safe li { list-style: none; padding: 8px 12px; margin: 6px 0; background: #FFF5F5; border-radius: 12px; font-size: 13px; }
+  .safe li::before { content: "🛡️ "; }
+  .review { background: #F0FFF4; border: 2px dashed #4CAF50; }
+  .review li { margin-left: 20px; font-size: 13px; padding: 2px 0; }
+  .checkin-zone { margin: 6px 14px 20px; }
+  .btn-checkin {
+    display: block; width: 100%; border: none; font-family: inherit;
+    background: #7CDB6E; color: #fff; font-size: 17px; font-weight: 800;
+    padding: 17px 0; border-radius: 18px; box-shadow: 0 4px 0 #4CAF50;
+  }
+
+  /* ---- 压暗背景 + 庆祝弹窗 ---- */
+  .dim {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(45,55,72,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 26px;
+  }
+  .pop {
+    position: relative; overflow: hidden;
+    background: #fff; border-radius: 26px; width: 100%;
+    border: 4px solid #FFD93D; box-shadow: 0 0 44px rgba(255,217,61,.75), 0 14px 34px rgba(45,55,72,.35);
+    padding: 26px 20px 20px; text-align: center;
+    animation: pop .5s cubic-bezier(.2,1.6,.4,1);
+  }
+  @keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .confetti { position: absolute; top: -6%; font-size: 20px; animation: fall 2.6s ease-in forwards; }
+  @keyframes fall { to { transform: translateY(340px) rotate(300deg); opacity: 0; } }
+  .pop h2 { font-size: 20px; }
+  .pop .sub2 { color: #718096; font-size: 12px; margin-top: 2px; }
+  .badge-circle {
+    width: 96px; height: 96px; margin: 16px auto 0; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #FFE98A, #FFD93D 70%);
+    border: 4px solid #E8A800; box-shadow: 0 4px 0 #D9C46A, 0 0 24px rgba(255,217,61,.9);
+    display: flex; align-items: center; justify-content: center; font-size: 52px;
+    animation: spin .9s ease;
+  }
+  @keyframes spin { from { transform: rotate(-360deg) scale(.4); } to { transform: rotate(0) scale(1); } }
+  .badge-name { font-size: 21px; font-weight: 800; margin-top: 10px; }
+  .full-star { display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 800; color: #8A6D00; background: #FFF7D6; border-radius: 999px; padding: 2px 12px; }
+  .ms-line { display: flex; align-items: center; gap: 8px; margin: 16px 0 4px; color: #A0AEC0; font-size: 11px; }
+  .ms-line::before, .ms-line::after { content: ""; flex: 1; height: 1px; background: #EDF2F7; }
+  .ms-item {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    background: #FFF7D6; border: 2px dashed #D9C46A; border-radius: 14px; padding: 8px 12px; margin-top: 8px;
+  }
+  .ms-item .ico { font-size: 26px; }
+  .ms-item .n { font-weight: 800; font-size: 14px; color: #8A6D00; }
+  .ms-item .d { font-size: 11px; color: #B7791F; }
+  .pop .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .pop .actions a {
+    flex: 1; text-decoration: none; font-weight: 800; font-size: 14px;
+    padding: 11px 0; border-radius: 999px;
+  }
+  .btn-sun { background: #FFD93D; color: #5B4A00; }
+  .btn-gray { background: #EDF2F7; color: #4A5568; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span class="back">‹</span><span class="t">出行详情</span>
+    <span class="ops"><b>改期</b> · <b>删除</b></span>
+  </div>
+
+  <section class="head-card">
+    <h1>🌊 白河湾戏水入门</h1>
+    <p class="meta">9/5（周六）· 怀柔·白河湾 · 🚗 单程约 1.5 小时 · 👩 妈妈同行</p>
+    <div class="row2">
+      <span class="chip-doing">🔥 进行中 · 准备中</span>
+      <span class="chip-badge">徽章 🌊 踩水小能手</span>
+    </div>
+  </section>
+
+  <nav class="anchors">
+    <a href="#goal">🎯 目标</a>
+    <a href="#tasks">🗡️ 任务</a>
+    <a href="#schedule">🕐 行程</a>
+    <a href="#map">🗺️ 路线</a>
+    <a href="#gear">🎒 装备</a>
+    <a href="#safety">🛡️ 安全</a>
+    <a href="#review">📝 回顾</a>
+  </nav>
+
+  <section class="card block goal" id="goal">
+    <h2>🎯 本周目标</h2>
+    <p style="font-size:14px">让孩子第一次踩进清澈的山间溪水：敢下水、会保暖、知道安全边界。</p>
+  </section>
+
+  <section class="card block" id="tasks">
+    <h2>🗡️ 小勇士任务</h2>
+    <div class="sub"><span>勾选自动保存，换手机也不丢</span><b>已完成 3/3</b></div>
+    <div class="ck"><input type="checkbox" checked disabled><span class="txt">找到 3 种不同的石头，说出它们哪里不一样</span></div>
+    <div class="ck"><input type="checkbox" checked disabled><span class="txt">和爸爸一起搭好天幕，敲紧 4 根地钉</span></div>
+    <div class="ck"><input type="checkbox" checked disabled><span class="txt">临走带走所有垃圾，比一比谁捡得干净</span></div>
+  </section>
+
+  <section class="card block" id="schedule">
+    <h2>🕐 行程安排</h2>
+    <div class="itinerary">
+      <div class="it-item"><span class="it-time">7:30</span>出发，上车先补个回笼觉</div>
+      <div class="it-item"><span class="it-time">9:00</span>到达白河湾，先踩点选浅滩</div>
+      <div class="it-item"><span class="it-time">9:30</span>搭天幕、铺野餐垫（全家分工）</div>
+      <div class="it-item"><span class="it-time">10:00</span>戏水时间：踩水、捞鱼、水枪大战</div>
+      <div class="it-item"><span class="it-time">12:00</span>野餐午餐，休息一下</div>
+      <div class="it-item"><span class="it-time">14:00</span>溯溪寻宝：找石头、观察小生物</div>
+      <div class="it-item"><span class="it-time">16:30</span>返程，路上复盘今天的发现</div>
+    </div>
+  </section>
+
+  <div class="card" id="gear">
+    <div class="map-head">🎒 装备清单</div>
+    <div class="block" style="padding-top:8px">
+      <div class="prog-t"><span>已准备 12/12 件</span><span>100%</span></div>
+      <div class="prog"><i style="width:100%"></i></div>
+    </div>
+  </div>
+
+  <div class="checkin-zone">
+    <button class="btn-checkin">✅ 已完成本次冒险 · 🌊 踩水小能手</button>
+  </div>
+
+  <!-- 压暗遮罩 + 解锁弹窗 -->
+  <div class="dim">
+    <div class="pop">
+      <span class="confetti" style="left:8%">🎊</span>
+      <span class="confetti" style="left:28%;animation-delay:.2s">✨</span>
+      <span class="confetti" style="left:52%;animation-delay:.1s">🎉</span>
+      <span class="confetti" style="left:74%;animation-delay:.3s">🎈</span>
+      <span class="confetti" style="left:90%;animation-delay:.15s">✨</span>
+      <h2>🎉 打卡成功！</h2>
+      <p class="sub2">解锁活动徽章</p>
+      <div class="badge-circle">🌊</div>
+      <div class="badge-name">踩水小能手</div>
+      <span class="full-star">⭐ 满星版 · 小勇士任务 3/3 全部完成</span>
+      <div class="ms-line">同时解锁里程碑</div>
+      <div class="ms-item">
+        <span class="ico">🏕️</span>
+        <span><div class="n">首次露营</div><div class="d">完成第 1 次露营过夜 · 里程碑 1/6</div></span>
+      </div>
+      <div class="actions">
+        <a href="#" class="btn-sun">🏅 查看徽章墙</a>
+        <a href="#" class="btn-gray">太棒了！</a>
+      </div>
+    </div>
+  </div>
+<script>
+  if (new URLSearchParams(location.search).get('badge') === 'none') {
+    document.querySelector('.chip-badge').hidden = true;
+    document.querySelector('.btn-checkin').textContent = '✅ 已完成本次冒险';
+    document.querySelector('.pop h2').textContent = '已完成本次冒险';
+    document.querySelector('.sub2').hidden = true;
+    document.querySelector('.badge-circle').textContent = '✅';
+    document.querySelector('.badge-name').hidden = true;
+  }
+</script>
+</body>
+</html>

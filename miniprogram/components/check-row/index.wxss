@@ -1,0 +1,24 @@
+.ck-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 16rpx 8rpx;
+  border-radius: 14rpx;
+}
+
+.ck-box {
+  flex: 0 0 auto;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 50%;
+  border: 4rpx solid #CBD5E0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: #fff;
+}
+.ck-row.done .ck-box { background: var(--grass-dk); border-color: var(--grass-dk); }
+.ck-row.done .ck-text { color: #A0AEC0; text-decoration: line-through; }
+.ck-row.readonly { opacity: 0.9; }

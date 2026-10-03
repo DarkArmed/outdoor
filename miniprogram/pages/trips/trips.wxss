@@ -1,0 +1,4 @@
+.empty { padding: 96rpx 40rpx; }
+.empty-emoji { font-size: 96rpx; }
+.empty-title { font-size: 34rpx; font-weight: 800; color: var(--ink); margin: 16rpx 0 8rpx; }
+.join-all { margin-top: 32rpx; padding-left: 60rpx; padding-right: 60rpx; }

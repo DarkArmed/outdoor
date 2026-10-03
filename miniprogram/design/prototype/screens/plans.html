@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>计划库 · Tab1</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .hero {
+    text-align: center; padding: 26px 20px 20px;
+    background: linear-gradient(180deg, #7ED6FF 0%, #EAF7FF 60%, #FFFDF5 100%);
+    border-radius: 0 0 28px 28px;
+  }
+  .hero .scene { font-size: 42px; letter-spacing: 4px; }
+  .hero h1 { font-size: 22px; margin-top: 8px; text-shadow: 2px 2px 0 #FFD93D; }
+  .hero .sub { margin-top: 4px; color: #4A5568; font-size: 13px; }
+
+  .safety {
+    margin: 16px 14px 0; background: #FFF5F5;
+    border: 2px dashed #FF6B6B; border-radius: 16px; padding: 10px 14px 12px;
+  }
+  .safety h2 { font-size: 14px; color: #C53030; margin-bottom: 6px; }
+  .safety ul { list-style: none; }
+  .safety li { font-size: 13px; padding: 2px 0; }
+  .safety li::before { content: "☀️ "; font-size: 11px; }
+
+  .month-title { display: flex; align-items: center; gap: 8px; margin: 22px 16px 10px; font-size: 17px; font-weight: 800; }
+  .month-title::after { content: ""; flex: 1; height: 3px; border-radius: 2px; background: linear-gradient(90deg, #FFD93D, transparent); }
+
+  .card {
+    margin: 0 14px 14px; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(45,55,72,.08); overflow: hidden;
+  }
+  .card .art { padding: 12px 16px; font-size: 34px; letter-spacing: 4px; }
+  .card .art small { float: right; font-size: 12px; background: rgba(255,255,255,.85); color: #4A5568; padding: 2px 10px; border-radius: 999px; margin-top: 6px; }
+  .art-a { background: linear-gradient(120deg, #B2F5EA, #CDEBFF); }
+  .art-b { background: linear-gradient(120deg, #C6F6D5, #FEEBC8); }
+  .art-c { background: linear-gradient(120deg, #E9D8FD, #CDEBFF); }
+  .art-d { background: linear-gradient(120deg, #FEEBC8, #FFD9E4); }
+  .card .body { padding: 10px 14px 12px; }
+  .card .title { font-size: 16px; font-weight: 800; }
+  .card .meta { color: #718096; font-size: 12px; margin-top: 2px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+  .badge.type-A { background: #B2F5EA; color: #234E52; }
+  .badge.type-B { background: #C6F6D5; color: #22543D; }
+  .badge.type-C { background: #FEEBC8; color: #7B341E; }
+  .badge.type-D { background: #E9D8FD; color: #44337A; }
+  .badge.mom { background: #FFD9E4; color: #B03060; }
+  .badge.drive { background: #EDF2F7; color: #4A5568; }
+  .card .go { float: right; color: #A0AEC0; font-size: 18px; margin-top: -2px; }
+
+  .archive-head { margin: 26px 16px 10px; font-size: 15px; font-weight: 800; color: #718096; }
+  .archived { background: #F7FAFC; }
+  .archived .art { background: #EDF2F7; }
+  .badge.arch { background: #E2E8F0; color: #4A5568; }
+
+  .tabbar {
+    display: flex; background: #FFFFFF; border-top: 1px solid #EDF2F7;
+    margin-top: 20px; padding: 6px 0 10px;
+  }
+  .tab { flex: 1; text-align: center; color: #718096; font-size: 11px; }
+  .tab .ico { display: block; font-size: 21px; }
+  .tab.active { color: #4CAF50; font-weight: 800; }
+</style>
+</head>
+<body>
+  <section class="hero">
+    <div class="scene">🏔️🌲🌊</div>
+    <h1>小宝的户外大冒险</h1>
+    <p class="sub">爸爸 + 小宝（7 岁）· 北京出发 · 每周末一次</p>
+  </section>
+
+  <section class="safety">
+    <h2>🛡️ 安全口诀 · 出发前念一遍</h2>
+    <ul>
+      <li>天气不好不出门</li>
+      <li>玩水必穿救生衣</li>
+      <li>下坡慢点走</li>
+      <li>渴了先喝水</li>
+      <li>垃圾带回家</li>
+    </ul>
+  </section>
+
+  <h2 class="month-title">🗓️ 9 月 · 从玩水开始</h2>
+  <div class="card">
+    <div class="art art-a">🌊🥾🧺 <small>本周</small></div>
+    <div class="body">
+      <span class="go">›</span>
+      <div class="title">🌊 白河湾戏水入门</div>
+      <div class="meta">9/5（周六）· 怀柔·白河湾</div>
+      <div class="badges">
+        <span class="badge type-A">A 溯溪玩水</span>
+        <span class="badge drive">🚗 单程约 1.5 小时</span>
+        <span class="badge mom">👩 妈妈同行</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="art art-b">🥾🌲🍙</div>
+    <div class="body">
+      <span class="go">›</span>
+      <div class="title">🥾 神堂峪徒步</div>
+      <div class="meta">9/12（周六）· 怀柔·神堂峪</div>
+      <div class="badges">
+        <span class="badge type-B">B 登山徒步</span>
+        <span class="badge drive">🚗 单程约 1.5 小时</span>
+        <span class="badge mom">👩 妈妈同行</span>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="art art-c">🔭⛺🌌</div>
+    <div class="body">
+      <span class="go">›</span>
+      <div class="title">🔭 华海田园观星露营</div>
+      <div class="meta">9/19（周六–周日）· 延庆·天文农庄</div>
+      <div class="badges">
+        <span class="badge type-C">C 露营观星</span>
+        <span class="badge drive">🚗 单程约 1.5 小时</span>
+        <span class="badge mom">👩 妈妈同行</span>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="month-title">🗓️ 10 月 · 进山赏秋</h2>
+  <div class="card">
+    <div class="art art-d">🍁⛰️🥪</div>
+    <div class="body">
+      <span class="go">›</span>
+      <div class="title">🍁 西山赏秋徒步</div>
+      <div class="meta">10/10（周六）· 西山国家森林公园</div>
+      <div class="badges">
+        <span class="badge type-B">B 登山徒步</span>
+        <span class="badge drive">🚗 单程约 0.5 小时</span>
+        <span class="badge mom">👩 妈妈同行</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="archive-head">📦 备用计划</div>
+  <div class="card archived">
+    <div class="art">⛺🔥🌲</div>
+    <div class="body">
+      <span class="go">›</span>
+      <div class="title">⛺ 白河湾收官露营</div>
+      <div class="meta">11/7（周六–周日）· 怀柔·白河湾</div>
+      <div class="badges">
+        <span class="badge arch">已归档</span>
+        <span class="badge type-C">C 露营观星</span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="tabbar">
+    <div class="tab active"><span class="ico">📖</span>计划库</div>
+    <div class="tab"><span class="ico">🧭</span>我的出行</div>
+    <div class="tab"><span class="ico">👤</span>我的</div>
+  </nav>
+</body>
+</html>

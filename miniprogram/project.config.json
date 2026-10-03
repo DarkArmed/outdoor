@@ -1,0 +1,20 @@
+{
+  "description": "小宝的户外大冒险 · 微信小程序客户端",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "libVersion": "3.8.12",
+  "projectname": "outdoor-miniprogram",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": false,
+    "ignoreDevUnusedFiles": false,
+    "ignoreUploadUnusedFiles": true
+  },
+  "packOptions": {
+    "ignore": []
+  },
+  "condition": {}
+}

@@ -1,0 +1,4 @@
+<view class="ck-row {{checked ? 'done' : ''}} {{disabled ? 'readonly' : ''}}" bindtap="onTap">
+  <view class="ck-box">{{checked ? '✓' : ''}}</view>
+  <view class="ck-text">{{text}}</view>
+</view>

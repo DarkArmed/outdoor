@@ -30,8 +30,21 @@ class UserOut(BaseModel):
     email: str
     is_active: bool
     created_at: datetime
+    nickname: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class WechatLoginIn(BaseModel):
+    code: str = Field(min_length=1)
+    nickname: str | None = None
+
+
+class WechatLoginOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    is_new_user: bool
+    user: UserOut
 
 
 # ---------- Profile ----------

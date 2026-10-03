@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "方案详情",
+  "usingComponents": {
+    "section-title": "../../components/section-title/index",
+    "check-row": "../../components/check-row/index"
+  }
+}

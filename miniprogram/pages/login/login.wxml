@@ -1,0 +1,22 @@
+<view class="login-page">
+  <view class="brand">
+    <view class="scene">
+      <text class="scene-emoji">⛺</text>
+      <text class="scene-emoji">🌲</text>
+      <text class="scene-emoji">🏔️</text>
+    </view>
+    <view class="brand-title">小宝的户外大冒险</view>
+    <view class="brand-sub">爸爸 + 小宝 · 北京出发 · 每周末一次</view>
+  </view>
+
+  <button class="login-btn" loading="{{loading}}" disabled="{{loading}}" bindtap="onLogin">
+    微信一键登录
+  </button>
+
+  <view class="login-error" wx:if="{{error}}">
+    <text>{{error}}</text>
+    <text class="login-retry" bindtap="onLogin">点我重试</text>
+  </view>
+
+  <view class="login-note muted">登录即自动创建账号，无需注册和密码</view>
+</view>

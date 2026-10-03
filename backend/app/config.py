@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed CORS origins
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
+    # WeChat miniapp login; both empty with debug=true falls back to mock code2session
+    wechat_miniapp_appid: str = ""
+    wechat_miniapp_secret: str = ""
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

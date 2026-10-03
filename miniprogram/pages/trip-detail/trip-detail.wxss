@@ -1,0 +1,114 @@
+/* 顶部胶囊锚点 */
+.capsules {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  white-space: nowrap;
+  background: var(--paper);
+  padding: 14rpx 16rpx;
+}
+.capsule {
+  display: inline-block;
+  margin-right: 14rpx;
+  padding: 8rpx 26rpx;
+  border-radius: 999rpx;
+  background: #EDF2F7;
+  color: var(--muted);
+  font-size: 26rpx;
+}
+.capsule.active { background: var(--sun); color: var(--ink); font-weight: 800; }
+
+.td-scroll { height: 100vh; box-sizing: border-box; }
+.td-scroll .page-body { padding-top: 110rpx; padding-bottom: 240rpx; }
+
+/* Hero 工具行 */
+.trip-tools {
+  margin-top: 16rpx;
+  padding: 0 24rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.tool-btn { font-size: 24rpx; color: var(--muted); padding: 8rpx 4rpx; }
+.tool-btn.danger { color: var(--coral); }
+
+/* 路线图 */
+.route-title { font-weight: 800; font-size: 28rpx; }
+.route-map { width: 100%; height: 420rpx; border-radius: 16rpx; margin-top: 12rpx; }
+.map-note { text-align: center; font-size: 22rpx; margin-top: 10rpx; }
+.map-legend { margin-top: 12rpx; }
+.legend-item { font-size: 24rpx; color: var(--muted); padding: 2rpx 0; }
+.route-empty { text-align: center; padding: 48rpx 0; }
+
+/* 打卡按钮（长按 2 秒） */
+.checkin-btn {
+  position: relative;
+  overflow: hidden;
+  background: var(--orange);
+  color: #fff;
+  font-weight: 800;
+  font-size: 32rpx;
+  border-radius: 22rpx;
+  padding: 24rpx 0;
+  box-shadow: 0 8rpx 0 #E07F1F;
+}
+.checkin-btn::after { border: none; }
+.checkin-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: rgba(255, 255, 255, 0.35);
+  pointer-events: none;
+}
+.checkin-btn.holding .checkin-progress { width: 100%; transition: width 2s linear; }
+.checkin-text { position: relative; }
+.checkin-hint { text-align: center; margin-top: 10rpx; font-size: 24rpx; }
+
+.done-bar {
+  background: var(--grass-dk);
+  color: #fff;
+  font-weight: 800;
+  font-size: 32rpx;
+  border-radius: 22rpx;
+  padding: 24rpx 0;
+  text-align: center;
+}
+
+/* 庆祝弹窗 */
+.celebrate-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 90;
+  background: rgba(43, 58, 103, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.celebrate-card {
+  width: 78%;
+  box-sizing: border-box;
+  background: var(--card);
+  border-radius: 32rpx;
+  padding: 48rpx 40rpx;
+  text-align: center;
+}
+.celebrate-card.full-star {
+  border: 8rpx solid var(--sun);
+  box-shadow: 0 0 60rpx rgba(255, 217, 61, 0.8);
+}
+.celebrate-big { font-size: 110rpx; }
+.celebrate-title { font-size: 36rpx; font-weight: 800; margin-top: 8rpx; }
+.celebrate-name { font-size: 30rpx; color: #8A6D00; font-weight: 700; margin: 8rpx 0 4rpx; }
+.celebrate-star { color: #B7791F; font-weight: 800; margin-top: 8rpx; }
+.celebrate-ms { margin: 16rpx 0; color: #8A6D00; font-weight: 600; }
+.ms-item { padding: 4rpx 0; }
+.celebrate-card .btn-primary { margin-top: 16rpx; }
+.celebrate-btns { display: flex; gap: 20rpx; margin-top: 16rpx; }
+.celebrate-btns button { flex: 1; margin-top: 0; }
