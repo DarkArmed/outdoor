@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.config import get_settings
+from app.readiness import readiness
+from app.static_site import attach_static_site
 from app.database import Base, engine, get_db
 from app.models import BadgeUnlock, User
 from app.routers import legacy, auth, milestones, plans, profile, routes, state, trips, users
@@ -17,11 +19,17 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Create tables for dev convenience; Alembic is the source of truth for migrations.
-    Base.metadata.create_all(bind=engine)
+    if settings.app_env != "production":
+        Base.metadata.create_all(bind=engine)
     yield
 
 
-app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app = FastAPI(
+    title=settings.app_name, lifespan=lifespan,
+    docs_url=None if settings.app_env == "production" else "/docs",
+    redoc_url=None if settings.app_env == "production" else "/redoc",
+    openapi_url=None if settings.app_env == "production" else "/openapi.json",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +50,9 @@ app.include_router(milestones.router)
 app.include_router(state.router)
 
 
+app.add_api_route("/api/ready", readiness, methods=["GET"], include_in_schema=False)
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
@@ -58,6 +69,12 @@ def my_badges(
     db: Session = Depends(get_db),
 ):
     return db.query(BadgeUnlock).filter(BadgeUnlock.user_id == current_user.id).all()
+
+
+if settings.static_dir:
+    attach_static_site(app, settings.static_dir)
+elif settings.app_env == "production":
+    raise RuntimeError("Production requires STATIC_DIR with a built frontend")
 
 
 if __name__ == "__main__":

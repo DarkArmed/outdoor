@@ -27,3 +27,9 @@ node_modules/
 .npm-cache/
 
 .pytest_cache/
+
+# Local container verification
+deploy/.env.local
+deploy/local-artifacts/
+web/container-report/
+web/container-results/
