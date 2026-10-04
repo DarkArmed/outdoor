@@ -1,0 +1,24 @@
+<view class="page-body">
+  <block wx:if="{{planned.length}}">
+    <view class="month-label">🚗 进行中</view>
+    <view wx:for="{{planned}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpenTrip">
+      <plan-card plan="{{item.content}}" trip-status="{{item.status}}" />
+    </view>
+  </block>
+
+  <block wx:if="{{done.length}}">
+    <view class="month-label">✅ 已完成</view>
+    <view wx:for="{{done}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpenTrip">
+      <plan-card plan="{{item.content}}" trip-status="{{item.status}}" />
+    </view>
+  </block>
+
+  <view class="empty card" wx:if="{{!loading && !planned.length && !done.length}}">
+    <view class="empty-emoji">🎒</view>
+    <view class="empty-title">还没有出行计划</view>
+    <view class="muted">把本赛季的方案加入出行，出发前逐项核对装备</view>
+    <button class="btn-primary join-all" loading="{{joining}}" disabled="{{joining}}" bindtap="joinAll">
+      一键加入本赛季计划
+    </button>
+  </view>
+</view>

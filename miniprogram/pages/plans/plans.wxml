@@ -1,0 +1,29 @@
+<view class="page-body">
+  <view class="hero card">
+    <view class="hero-title">{{heroTitle}}</view>
+    <view class="hero-sub muted">{{heroSubtitle}}</view>
+  </view>
+
+  <view class="safety-banner">
+    <view class="safety-title">🛡️ 安全口诀</view>
+    <view class="safety-item" wx:for="{{safetyRules}}" wx:key="*this">✔️ {{item}}</view>
+  </view>
+
+  <block wx:for="{{groups}}" wx:key="key">
+    <view class="month-label">{{item.label}}</view>
+    <view wx:for="{{item.plans}}" wx:for-item="plan" wx:key="id" data-id="{{plan.id}}" bindtap="onOpenPlan">
+      <plan-card plan="{{plan}}" />
+    </view>
+  </block>
+
+  <block wx:if="{{archived.length}}">
+    <view class="month-label archived-label">📦 备用计划</view>
+    <view wx:for="{{archived}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpenPlan">
+      <plan-card plan="{{item}}" />
+    </view>
+  </block>
+
+  <view class="empty" wx:if="{{!loading && !groups.length && !archived.length}}">
+    还没有计划，先去后端添加吧～
+  </view>
+</view>

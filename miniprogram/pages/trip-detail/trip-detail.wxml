@@ -1,0 +1,182 @@
+<view class="td-page" wx:if="{{trip}}">
+  <!-- 顶部胶囊锚点导航 -->
+  <scroll-view class="capsules" scroll-x enhanced show-scrollbar="{{false}}">
+    <view
+      class="capsule {{activeCap === item.id ? 'active' : ''}}"
+      wx:for="{{capsules}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="scrollTo"
+    >{{item.label}}</view>
+  </scroll-view>
+
+  <scroll-view class="td-scroll" scroll-y enhanced scroll-with-animation scroll-into-view="{{scrollTo}}">
+    <view class="page-body">
+      <!-- Hero -->
+      <view class="d-hero card" id="sec-hero">
+        <view class="d-art theme-{{content.theme || 'default'}}">
+          <text class="d-emoji">{{content.emoji || '🌲'}}</text>
+        </view>
+        <view class="d-title">{{content.title}}</view>
+        <view class="d-meta muted">📅 {{content.date}} · 📍 {{content.location}}</view>
+        <view class="d-badges">
+          <text class="badge {{typeCls}}">{{content.type}}</text>
+          <text class="badge badge-drive" wx:if="{{content.drive && content.drive.time}}">🚗 {{content.drive.time}}</text>
+          <text class="badge badge-mom" wx:if="{{content.mom}}">👩 妈妈同行</text>
+        </view>
+        <view class="trip-tools">
+          <picker mode="date" value="{{trip.planned_date || ''}}" bindchange="onDateChange">
+            <view class="tool-btn">📅 出发日期：{{trip.planned_date || '未设置'}} 🔽</view>
+          </picker>
+          <view class="tool-btn danger" bindtap="onDelete">🗑️ 删除出行</view>
+        </view>
+      </view>
+
+      <view id="sec-goal" wx:if="{{content.goal}}">
+        <section-title emoji="🎯" title="本周目标" />
+        <view class="goal-box">{{content.goal}}</view>
+      </view>
+
+      <view id="sec-tasks" wx:if="{{taskRows.length}}">
+        <section-title emoji="🗡️" title="小勇士任务" />
+        <view class="card pad">
+          <check-row
+            wx:for="{{taskRows}}"
+            wx:key="idx"
+            text="{{item.text}}"
+            checked="{{item.checked}}"
+            data-idx="{{item.idx}}"
+            bind:toggle="onToggleTask"
+          />
+        </view>
+      </view>
+
+      <view wx:if="{{content.tips && content.tips.length}}">
+        <section-title emoji="💡" title="爸爸的小抄" />
+        <view class="tip-box">
+          <view wx:for="{{content.tips}}" wx:key="*this">· {{item}}</view>
+        </view>
+      </view>
+
+      <view id="sec-itinerary" wx:if="{{days.length}}">
+        <section-title emoji="🕐" title="行程安排" />
+        <view class="card pad" wx:for="{{days}}" wx:key="index">
+          <view class="day-name" wx:if="{{item.name}}">{{item.name}}</view>
+          <view class="it-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="index">
+            <text class="it-time">{{it.time}}</text>
+            <text class="it-text">{{it.text}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view id="sec-route">
+        <section-title emoji="🗺️" title="路线图" />
+        <view class="card pad" wx:if="{{hasRoute}}">
+          <view class="route-title">
+            {{route.drive.from.name}} → {{route.drive.to.name}}<text wx:if="{{route.drive.distance}}"> · {{route.drive.distance}}km</text><text wx:if="{{route.drive.duration}}"> · 约{{route.drive.duration}}分钟</text>
+          </view>
+          <map
+            class="route-map"
+            longitude="{{mapCenter.longitude}}"
+            latitude="{{mapCenter.latitude}}"
+            scale="{{mapScale}}"
+            markers="{{markers}}"
+            polyline="{{polylines}}"
+            show-location="{{false}}"
+          ></map>
+          <view class="map-note muted">真实地理数据（高德）· 卡通化指路参考，导航请用高德 App</view>
+          <view class="map-legend" wx:if="{{route.hike && route.hike.title}}">
+            <view class="legend-item">〰️ 蓝线：自驾路线</view>
+            <view class="legend-item" wx:if="{{route.hike.path && route.hike.path.length}}">┆ 绿虚线：{{route.hike.title}}（{{route.hike.length}}）</view>
+          </view>
+        </view>
+        <view class="card pad route-empty" wx:else>
+          <view>🗺️ 暂无路线数据</view>
+          <view class="muted">导航请用高德 App</view>
+        </view>
+      </view>
+
+      <view id="sec-gear" wx:if="{{gearTotal}}">
+        <section-title emoji="🎒" title="本周必带装备" />
+        <view class="card pad">
+          <view class="gear-progress">
+            <view class="gear-progress-inner" style="width: {{gearPct}}%"></view>
+          </view>
+          <view class="gear-progress-text" wx:if="{{gearDone < gearTotal}}">已准备 {{gearDone}}/{{gearTotal}} 件</view>
+          <view class="gear-progress-text all-done" wx:else>🎉 全部准备好啦，出发！</view>
+          <view class="gear-group-title">🎒 基础装备（每次必带）</view>
+          <check-row
+            wx:for="{{gearBase}}"
+            wx:key="idx"
+            text="{{item.text}}"
+            checked="{{gearChecked[item.idx]}}"
+            data-idx="{{item.idx}}"
+            bind:toggle="onToggleGear"
+          />
+          <view class="gear-group-title">⭐ 本周特需</view>
+          <check-row
+            wx:for="{{gearSpecial}}"
+            wx:key="idx"
+            text="{{item.text}}"
+            checked="{{gearChecked[item.idx]}}"
+            data-idx="{{item.idx}}"
+            bind:toggle="onToggleGear"
+          />
+        </view>
+      </view>
+
+      <view id="sec-safety" wx:if="{{content.safety && content.safety.length}}">
+        <section-title emoji="🛡️" title="安全要点" />
+        <view>
+          <view class="safety-row" wx:for="{{content.safety}}" wx:key="*this">🛡️ {{item}}</view>
+        </view>
+      </view>
+
+      <view id="sec-review" wx:if="{{content.review && content.review.length}}">
+        <section-title emoji="📝" title="回顾问题" />
+        <view class="review-box">
+          <view wx:for="{{content.review}}" wx:key="*this">？{{item}}</view>
+        </view>
+      </view>
+
+      <view class="bottom-gap"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 所有出行均可打卡；备用方案可以没有活动徽章。 -->
+  <view class="bottom-bar">
+    <block wx:if="{{trip.status !== 'done'}}">
+      <button
+        class="checkin-btn {{holding ? 'holding' : ''}}"
+        disabled="{{checking}}"
+        bindtouchstart="startHold"
+        bindtouchend="endHold"
+        bindtouchcancel="endHold"
+      >
+        <view class="checkin-progress"></view>
+        <text class="checkin-text">{{checking ? '打卡中…' : '🏁 完成本次冒险（长按 2 秒打卡）'}}</text>
+      </button>
+      <view class="checkin-hint muted" wx:if="{{content.badge}}">完成后解锁徽章 {{content.badge.icon}} {{content.badge.name}}</view>
+      <view class="checkin-hint muted" wx:else>完成后同步本次出行记录</view>
+    </block>
+    <view class="done-bar" wx:else>✅ 已完成本次冒险<text wx:if="{{content.badge}}"> · {{content.badge.icon}} {{content.badge.name}}</text></view>
+  </view>
+
+  <!-- 庆祝弹窗 -->
+  <view class="celebrate-mask" wx:if="{{celebrate}}" catchtouchmove="noop">
+    <view class="celebrate-card {{celebrate.fullStar ? 'full-star' : ''}}">
+      <view class="celebrate-big">{{celebrate.badge ? celebrate.badge.icon : '✅'}}</view>
+      <view class="celebrate-title">{{celebrate.badge ? '🎉 解锁徽章！' : '已完成本次冒险'}}</view>
+      <view class="celebrate-name" wx:if="{{celebrate.badge}}">{{celebrate.badge.name}}</view>
+      <view class="celebrate-star" wx:if="{{celebrate.fullStar}}">🌟 满星通关！</view>
+      <view class="celebrate-ms" wx:if="{{celebrate.newMilestones.length}}">
+        <view class="ms-line">同时解锁里程碑：</view>
+        <view class="ms-item" wx:for="{{celebrate.newMilestones}}" wx:key="id">{{item.icon}} {{item.name}}</view>
+      </view>
+      <view class="celebrate-btns">
+        <button class="btn-ghost" bindtap="goBadgeWall">查看徽章墙</button>
+        <button class="btn-primary" bindtap="closeCelebrate">太棒了！</button>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "我的出行",
+  "usingComponents": {
+    "plan-card": "../../components/plan-card/index"
+  }
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的 · Tab3</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .topbar { padding: 18px 20px 4px; }
+  .topbar h1 { font-size: 22px; }
+
+  .card {
+    margin: 12px 14px 0; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(45,55,72,.08); overflow: hidden;
+  }
+  .user { display: flex; align-items: center; gap: 14px; padding: 16px; }
+  .avatar {
+    width: 58px; height: 58px; border-radius: 50%; font-size: 30px;
+    background: linear-gradient(135deg, #7ED6FF, #A78BFA);
+    display: flex; align-items: center; justify-content: center;
+    border: 3px solid #fff; box-shadow: 0 2px 6px rgba(45,55,72,.15);
+  }
+  .user .n { font-size: 18px; font-weight: 800; }
+  .user .d { color: #718096; font-size: 12px; margin-top: 2px; }
+
+  .stats {
+    margin: 12px 14px 0; background: #E8F7EE; color: #1E6B3C;
+    border-radius: 999px; text-align: center; padding: 10px 0;
+    font-weight: 800; font-size: 14px;
+  }
+
+  .block { padding: 14px 16px; }
+  .block h2 { font-size: 16px; margin-bottom: 10px; }
+  .wall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .cell {
+    background: #F7FAFC; border-radius: 16px; padding: 12px 2px 9px;
+    text-align: center; box-shadow: 0 2px 4px rgba(45,55,72,.05);
+  }
+  .cell .ico { font-size: 28px; filter: grayscale(1); opacity: .35; }
+  .cell .nm { font-size: 11px; margin-top: 5px; color: #9AA3AD; font-weight: 700; }
+  .cell.on { background: #FFF7D6; box-shadow: 0 3px 0 #E8C547; }
+  .cell.on .ico { filter: none; opacity: 1; }
+  .cell.on .nm { color: #8A6D00; }
+  .cell.ms { border: 2px dashed #D9C46A; }
+  .cell.ms.on { border: 2px solid #E8A800; }
+
+  .pf { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px dashed #EDF2F7; font-size: 13px; }
+  .pf:last-of-type { border-bottom: none; }
+  .pf .k { color: #718096; flex: 0 0 76px; }
+  .pf .v { flex: 1; text-align: right; font-weight: 600; }
+
+  .btn-logout {
+    display: block; width: calc(100% - 28px); margin: 18px 14px 0; cursor: pointer;
+    background: #fff; color: #FF6B6B; border: 2px solid #FF6B6B;
+    font-size: 15px; font-weight: 800; padding: 12px 0; border-radius: 14px;
+    font-family: inherit;
+  }
+  .foot { text-align: center; color: #A0AEC0; font-size: 11px; margin-top: 12px; }
+
+  .tabbar {
+    display: flex; background: #FFFFFF; border-top: 1px solid #EDF2F7;
+    margin-top: 22px; padding: 6px 0 10px;
+  }
+  .tab { flex: 1; text-align: center; color: #718096; font-size: 11px; }
+  .tab .ico { display: block; font-size: 21px; }
+  .tab.active { color: #4CAF50; font-weight: 800; }
+</style>
+</head>
+<body>
+  <div class="topbar"><h1>我的</h1></div>
+
+  <section class="card user">
+    <div class="avatar">👨‍👦</div>
+    <div>
+      <div class="n">微信用户</div>
+      <div class="d">2026-08-07 加入 · 微信登录</div>
+    </div>
+  </section>
+
+  <div class="stats">🌟 已冒险 6 次 · 徒步 14 km · 露营 3 晚</div>
+
+  <section class="card block">
+    <h2>🏅 徽章墙</h2>
+    <div class="wall">
+      <div class="cell on"><div class="ico">🌊</div><div class="nm">踩水小能手</div></div>
+      <div class="cell on"><div class="ico">🥾</div><div class="nm">徒步小达人</div></div>
+      <div class="cell on"><div class="ico">🔭</div><div class="nm">观星小达人</div></div>
+      <div class="cell on"><div class="ico">🍁</div><div class="nm">赏秋小侦探</div></div>
+      <div class="cell ms on"><div class="ico">🏕️</div><div class="nm">首次露营</div></div>
+      <div class="cell"><div class="ico">❓</div><div class="nm">？？？</div></div>
+      <div class="cell"><div class="ico">❓</div><div class="nm">？？？</div></div>
+      <div class="cell"><div class="ico">❓</div><div class="nm">？？？</div></div>
+    </div>
+    <p style="font-size:11px;color:#A0AEC0;margin-top:10px">虚线框为里程碑徽章 · 完成对应冒险即可解锁</p>
+  </section>
+
+  <section class="card block">
+    <h2>👨‍👩‍👧 家庭画像</h2>
+    <div class="pf"><span class="k">出行成员</span><span class="v">爸爸 + 小宝（7 岁）</span></div>
+    <div class="pf"><span class="k">孩子特点</span><span class="v">能走 3–5 km · 爱玩水不怕脏</span></div>
+    <div class="pf"><span class="k">出发地与方式</span><span class="v">北京 · 自驾（单程可 3h+）</span></div>
+    <div class="pf"><span class="k">出行节奏</span><span class="v">周六日皆可用 · 每周末一次</span></div>
+    <p style="font-size:11px;color:#A0AEC0;margin-top:8px">画像只读展示 · 修改请在网页端进行</p>
+  </section>
+
+  <button class="btn-logout">退出登录</button>
+  <p class="foot">小宝的户外大冒险 · 微信小程序 v0.1</p>
+
+  <nav class="tabbar">
+    <div class="tab"><span class="ico">📖</span>计划库</div>
+    <div class="tab"><span class="ico">🧭</span>我的出行</div>
+    <div class="tab active"><span class="ico">👤</span>我的</div>
+  </nav>
+</body>
+</html>

@@ -1,0 +1,4 @@
+<view class="sec-title">
+  <text class="sec-emoji">{{emoji}}</text>
+  <text class="sec-text">{{title}}</text>
+</view>

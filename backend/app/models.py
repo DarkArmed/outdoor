@@ -29,6 +29,9 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
+    wechat_openid = Column(String(64), unique=True, nullable=True, index=True)
+    nickname = Column(String(64), nullable=True)
+
     profile = relationship("Profile", back_populates="user", uselist=False)
     trips = relationship("Trip", back_populates="user")
     badge_unlocks = relationship("BadgeUnlock", back_populates="user")

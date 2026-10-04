@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>我的出行 · 空状态</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto; min-height: 100vh;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+    display: flex; flex-direction: column;
+  }
+  .topbar { padding: 18px 20px 4px; }
+  .topbar h1 { font-size: 22px; }
+  .topbar p { color: #718096; font-size: 13px; margin-top: 2px; }
+
+  .empty { flex: 1; text-align: center; padding: 70px 34px 0; }
+  .empty .art { font-size: 62px; letter-spacing: 8px; }
+  .empty h2 { font-size: 19px; margin-top: 18px; }
+  .empty p { color: #718096; font-size: 13px; margin-top: 10px; }
+  .btn-join {
+    display: block; width: 100%; border: none; cursor: pointer; margin-top: 26px;
+    background: #4CAF50; color: #fff; font-size: 16px; font-weight: 800;
+    padding: 14px 0; border-radius: 14px; box-shadow: 0 4px 0 #3B8C40;
+    font-family: inherit;
+  }
+  .link { display: block; text-align: center; color: #4FC3F7; font-size: 13px; margin-top: 16px; font-weight: 700; }
+
+  .tabbar {
+    display: flex; background: #FFFFFF; border-top: 1px solid #EDF2F7;
+    margin-top: 40px; padding: 6px 0 10px;
+  }
+  .tab { flex: 1; text-align: center; color: #718096; font-size: 11px; }
+  .tab .ico { display: block; font-size: 21px; }
+  .tab.active { color: #4CAF50; font-weight: 800; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>我的出行</h1>
+    <p>把想去的方案放进来，出发前勾装备，现场打卡</p>
+  </div>
+
+  <section class="empty">
+    <div class="art">🎒🗺️✨</div>
+    <h2>这个周末还没有安排</h2>
+    <p>一键加入本赛季的全部方案；也可以去计划库挑几个喜欢的，逐个加入。</p>
+    <button class="btn-join">⚡ 一键加入本赛季计划</button>
+    <span class="link">先去逛逛计划库 →</span>
+  </section>
+
+  <nav class="tabbar">
+    <div class="tab"><span class="ico">📖</span>计划库</div>
+    <div class="tab active"><span class="ico">🧭</span>我的出行</div>
+    <div class="tab"><span class="ico">👤</span>我的</div>
+  </nav>
+</body>
+</html>

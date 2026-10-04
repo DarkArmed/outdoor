@@ -13,6 +13,16 @@ def test_get_plan_with_data(client, db_session, user):
     assert r.json()[0]["title"] == "Visible Plan"
 
 
+def test_get_plan_normalizes_null_hike(client, db_session, user):
+    # 无徒步环节的方案 hike 源数据可为 null，API 统一输出空对象（如室内攀岩/科技馆）
+    plan = make_plan(db_session, plan_id="2026-11-21_climb", title="室内攀岩")
+    plan.hike = None
+    db_session.commit()
+    r = client.get("/api/plans", headers=auth_headers(user))
+    assert r.status_code == 200
+    assert r.json()[0]["hike"] == {}
+
+
 def test_get_route(client, db_session, user):
     make_plan(db_session, plan_id="2026-10-11_test", title="Route Plan")
     route = Route(

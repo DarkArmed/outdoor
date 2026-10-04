@@ -1,0 +1,26 @@
+.p-card { overflow: hidden; margin-bottom: 24rpx; }
+
+.p-art {
+  position: relative;
+  height: 180rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.p-art-emoji { font-size: 96rpx; }
+
+.p-status {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  background: var(--grass-dk);
+  color: #fff;
+  font-size: 22rpx;
+  padding: 4rpx 18rpx;
+  border-radius: 999rpx;
+}
+
+.p-body { padding: 20rpx 24rpx 14rpx; }
+.p-title { font-size: 34rpx; font-weight: 700; }
+.p-meta { margin-top: 6rpx; font-size: 24rpx; }
+.p-badges { margin-top: 10rpx; display: flex; flex-wrap: wrap; }

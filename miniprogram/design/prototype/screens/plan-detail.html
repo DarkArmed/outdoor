@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>方案详情 · 白河湾戏水入门</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: #EDEAE0; }
+  body {
+    width: 375px; margin: 0 auto;
+    background: #FFFDF5; color: #2D3748;
+    font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.6;
+  }
+  .topbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 16px 10px; background: #FFFDF5;
+  }
+  .topbar .back { font-size: 20px; color: #2D3748; font-weight: 800; }
+  .topbar .t { font-size: 16px; font-weight: 800; }
+
+  .card {
+    margin: 0 14px 14px; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(45,55,72,.08); overflow: hidden;
+  }
+  .dhero { text-align: center; padding-bottom: 14px; }
+  .dhero .art {
+    padding: 18px 0 12px; font-size: 46px; letter-spacing: 6px;
+    background: linear-gradient(120deg, #B2F5EA, #CDEBFF);
+  }
+  .dhero h1 { font-size: 21px; margin-top: 12px; }
+  .dhero .meta { color: #718096; font-size: 12px; margin-top: 4px; padding: 0 20px; }
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 10px; padding: 0 16px; }
+  .badge { font-size: 11px; padding: 2px 10px; border-radius: 999px; font-weight: 700; }
+  .badge.type-A { background: #B2F5EA; color: #234E52; }
+  .badge.mom { background: #FFD9E4; color: #B03060; }
+  .badge.drive { background: #EDF2F7; color: #4A5568; }
+
+  .block { padding: 14px 16px; }
+  .block h2 { font-size: 16px; margin-bottom: 8px; }
+  .goal { background: #FFFBEB; border: 2px solid #FFD93D; }
+  .goal p { font-size: 14px; }
+  .tips { background: #EBF8FF; border: 2px solid #4FC3F7; }
+  .tips li { margin-left: 20px; font-size: 13px; padding: 2px 0; }
+
+  .ro-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 2px; font-size: 14px;
+  }
+  .ro-box {
+    flex: 0 0 19px; height: 19px; border: 2px solid #CBD5E0; border-radius: 6px;
+    background: #F7FAFC;
+  }
+  .ro-item.done .ro-box { background: #C6F6D5; border-color: #4CAF50; }
+  .ro-item.done .ro-box::after { content: "✓"; display: block; text-align: center; font-size: 12px; color: #22543D; line-height: 15px; }
+  .ro-item.done .txt { color: #A0AEC0; text-decoration: line-through; }
+  .hint { font-size: 11px; color: #A0AEC0; margin-top: 6px; }
+  .group-label { font-size: 12px; font-weight: 800; color: #718096; margin: 10px 0 2px; }
+
+  .itinerary { position: relative; margin-left: 8px; padding-left: 24px; }
+  .itinerary::before {
+    content: ""; position: absolute; left: 5px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px;
+    background: repeating-linear-gradient(180deg, #4CAF50 0 10px, transparent 10px 17px);
+  }
+  .it-item { position: relative; padding: 6px 0; font-size: 13px; }
+  .it-item::before {
+    content: ""; position: absolute; left: -25px; top: 12px;
+    width: 13px; height: 13px; border-radius: 50%;
+    background: #FFD93D; border: 3px solid #4CAF50;
+  }
+  .it-time { font-weight: 800; color: #4CAF50; margin-right: 6px; }
+
+  .map-ph {
+    margin: 0 14px 14px; border: 2px dashed #4FC3F7; border-radius: 16px;
+    background: #F0FAFF; text-align: center; padding: 26px 20px;
+  }
+  .map-ph .ico { font-size: 38px; }
+  .map-ph .t { font-weight: 800; margin-top: 6px; }
+  .map-ph .d { color: #718096; font-size: 12px; margin-top: 2px; }
+
+  .safe { background: #FFF5F5; }
+  .safe ul { list-style: none; }
+  .safe li { padding: 7px 12px; margin: 6px 0; background: #FFF5F5; border-radius: 12px; font-size: 13px; }
+  .safe li::before { content: "🛡️ "; }
+  .review { background: #F0FFF4; border: 2px dashed #4CAF50; }
+  .review li { margin-left: 20px; font-size: 13px; padding: 2px 0; }
+
+  .action-bar {
+    margin: 4px 14px 18px; background: #FFFFFF; border-radius: 16px;
+    box-shadow: 0 -2px 10px rgba(45,55,72,.10); padding: 12px 14px;
+  }
+  .action-bar .date-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 10px; }
+  .date-chip { background: #FFFBEB; border: 1px solid #FFD93D; border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: 12px; }
+  .btn-coral {
+    display: block; width: 100%; border: none; cursor: pointer;
+    background: #FF6B6B; color: #fff; font-size: 16px; font-weight: 800;
+    padding: 13px 0; border-radius: 14px; box-shadow: 0 4px 0 #D94F4F;
+    font-family: inherit;
+  }
+  .bar-note { text-align: center; font-size: 11px; color: #A0AEC0; margin-top: 8px; }
+</style>
+</head>
+<body>
+  <div class="topbar"><span class="back">‹</span><span class="t">方案详情</span></div>
+
+  <section class="card dhero">
+    <div class="art">🌊🏔️🌲</div>
+    <h1>🌊 白河湾戏水入门</h1>
+    <p class="meta">9/5（周六）· 怀柔·白河湾 · 🚗 单程约 1.5 小时</p>
+    <div class="badges">
+      <span class="badge type-A">A 溯溪玩水</span>
+      <span class="badge mom">👩 妈妈同行</span>
+      <span class="badge drive">不住宿 · 当天往返</span>
+    </div>
+  </section>
+
+  <section class="card block goal">
+    <h2>🎯 本周目标</h2>
+    <p>让孩子第一次踩进清澈的山间溪水：敢下水、会保暖、知道安全边界。</p>
+  </section>
+
+  <section class="card block tips">
+    <h2>💡 爸爸的小抄</h2>
+    <ul>
+      <li>溪水再浅也要全程视线不离开孩子，玩法先演示再放手。</li>
+      <li>备用衣物放车上，湿身 10 分钟内换掉，防止着凉。</li>
+      <li>先踩点再下水：避开青苔石和深潭，只玩浅滩。</li>
+    </ul>
+  </section>
+
+  <section class="card block">
+    <h2>🗡️ 小勇士任务</h2>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">找到 3 种不同的石头，说出它们哪里不一样</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">和爸爸一起搭好天幕，敲紧 4 根地钉</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">临走带走所有垃圾，比一比谁捡得干净</span></div>
+    <p class="hint">只读预览 · 加入「我的出行」后可逐项勾选</p>
+  </section>
+
+  <section class="card block">
+    <h2>🕐 行程安排</h2>
+    <div class="itinerary">
+      <div class="it-item"><span class="it-time">7:30</span>出发，上车先补个回笼觉</div>
+      <div class="it-item"><span class="it-time">9:00</span>到达白河湾，先踩点选浅滩</div>
+      <div class="it-item"><span class="it-time">9:30</span>搭天幕、铺野餐垫（全家分工）</div>
+      <div class="it-item"><span class="it-time">10:00</span>戏水时间：踩水、捞鱼、水枪大战</div>
+      <div class="it-item"><span class="it-time">12:00</span>野餐午餐，休息一下</div>
+      <div class="it-item"><span class="it-time">14:00</span>溯溪寻宝：找石头、观察小生物</div>
+      <div class="it-item"><span class="it-time">16:30</span>返程，路上复盘今天的发现</div>
+    </div>
+  </section>
+
+  <div class="map-ph">
+    <div class="ico">🗺️</div>
+    <div class="t">路线图</div>
+    <div class="d">加入「我的出行」后展示驾车路线与徒步途径点</div>
+  </div>
+
+  <section class="card block">
+    <h2>🎒 本周必带装备</h2>
+    <div class="group-label">基础</div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">速干衣裤（大人 + 孩子）</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">溯溪鞋（防滑包脚）</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">防晒帽 + 防晒霜</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">水壶（每人 1L 起）</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">换洗衣物（从内到外一整套）</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">毛巾 + 简易药包</span></div>
+    <div class="group-label">特需</div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">天幕 + 野餐垫</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">水枪（每人一把）</span></div>
+    <div class="ro-item"><span class="ro-box"></span><span class="txt">防水袋（装手机和钥匙）</span></div>
+    <p class="hint">只读预览 · 加入后可逐项勾选，进度自动保存</p>
+  </section>
+
+  <section class="card block safe">
+    <h2>🛡️ 安全要点</h2>
+    <ul>
+      <li><b>涨水信号</b>：水突然变浑、上游传来轰鸣声，立刻上岸不犹豫。</li>
+      <li><b>防滑</b>：青苔石头最滑，只踩干燥稳固的大石面，凉鞋不下水。</li>
+      <li><b>防晒补水</b>：每 40 分钟补涂防晒，定时喊孩子喝水。</li>
+    </ul>
+  </section>
+
+  <section class="card block review">
+    <h2>📝 回顾问题</h2>
+    <ul>
+      <li>小宝今天敢蹚到多深的水？下次想挑战哪里？</li>
+      <li>我们带走所有垃圾了吗？谁做得最棒？</li>
+    </ul>
+  </section>
+
+  <div class="action-bar">
+    <div class="date-row"><span>出发日期</span><span class="date-chip">9/5（周六） ▾</span></div>
+    <button class="btn-coral">＋ 加入我的出行</button>
+    <p class="bar-note">可随时修改出发日期 · 状态云端同步</p>
+  </div>
+</body>
+</html>

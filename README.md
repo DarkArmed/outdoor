@@ -16,8 +16,10 @@
 | [采购清单](equipment/采购清单.md) | 待购装备的优先级采购单 |
 | [周计划](/plans/) | 按周生成的具体活动方案 |
 | [周计划模板](plans/周计划模板.md) | 新增一周时复制此模板 |
-| 📦 [容器化部署规划](docs/tech/容器化部署.md) | 单台 Linux + Docker Compose；规划完成，尚未实施 |
+| 📦 [容器化部署规划](docs/tech/容器化部署.md) | 单应用容器 + PostgreSQL；本机已实现，生产事项待完成 |
+| 📦 [容器化本机验证](docs/tech/容器化本机验证.md) | Docker Compose 本机启动、验证结果与操作步骤 |
 | [backend/](backend/) | FastAPI 后端服务（多用户、持久化、方案/出行计划解耦）|
+| [miniprogram/](miniprogram/) | 微信小程序客户端（原生、无构建；设计原型见 `miniprogram/design/`）|
 
 ## 目录结构
 
@@ -34,10 +36,13 @@ outdoor/
 ├── equipment/
 │   ├── 装备总览.md          # 装备台账
 │   └── 采购清单.md          # 采购计划
+├── Dockerfile              # 前端构建 + Python 应用运行镜像
+├── deploy/                 # Compose、本机凭据生成及验证脚本
 ├── backend/                # 后端服务（FastAPI + PostgreSQL/SQLite + JWT）
 ├── web/                    # React + Vite + TypeScript 前端
 ├── data/                   # 公共方案、路线、路网、里程碑种子数据
 ├── docs/tasks/             # 项目任务协调
+├── miniprogram/            # 微信小程序客户端（原生 WXML/WXSS/JS，无构建）
 └── tools/
     ├── route-pipeline/      # 路线流水线：高德 API → 真实路线图
     └── dump-data.js         # 公共数据导出，供后端 seed 使用
@@ -59,4 +64,5 @@ outdoor/
 - [x] 图文版网站（`web/`，卡通插图 + 路线图 + 持久化清单）
 - [x] **后端服务化**（FastAPI + 多用户 + 方案/出行计划解耦 + JWT，见 [backend/](backend/)）
 - [x] 前端 React 重写 + 多用户界面 + 旧记录迁移（T3/T4）
+- [x] **微信小程序客户端**（微信登录、计划库、我的出行、勾选打卡，见 [miniprogram/](miniprogram/)）
 - [ ] 确认现有露营装备 → 出最终采购单

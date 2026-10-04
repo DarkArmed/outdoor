@@ -1,0 +1,32 @@
+<view class="page-body" wx:if="{{user}}">
+  <view class="me-card card">
+    <view class="me-avatar">{{user.nickname ? user.nickname.charAt(0) : '微'}}</view>
+    <view class="me-info">
+      <view class="me-name">{{user.nickname || '微信用户'}}</view>
+      <view class="muted">加入时间：{{joinedAt}}</view>
+    </view>
+  </view>
+
+  <view class="stats-bar">已冒险 {{stats.count}} 次 · 徒步 {{stats.hikeKm}} km · 露营 {{stats.campNights}} 晚</view>
+
+  <section-title emoji="🏅" title="徽章墙" />
+  <view class="badge-wall" wx:if="{{badgeCells.length}}">
+    <view
+      class="badge-cell {{item.unlocked ? 'unlocked' : ''}} {{item.milestone ? 'milestone' : ''}}"
+      wx:for="{{badgeCells}}"
+      wx:key="name"
+    >
+      <view class="badge-icon">{{item.unlocked ? item.icon : '？？？'}}</view>
+      <view class="badge-name">{{item.unlocked ? item.name : '？？？'}}</view>
+    </view>
+  </view>
+  <view class="card pad wall-empty" wx:else>完成一次冒险，解锁第一枚徽章吧！</view>
+
+  <section-title emoji="👨‍👦" title="家庭画像" />
+  <view class="card pad" wx:if="{{hasProfile}}">
+    <view class="pf-row" wx:for="{{profileRows}}" wx:key="*this">{{item}}</view>
+  </view>
+  <view class="card pad profile-empty" wx:else>未设置家庭画像（可在网页端设置）</view>
+
+  <button class="btn-ghost logout-btn" bindtap="onLogout">退出登录</button>
+</view>
