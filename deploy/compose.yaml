@@ -1,0 +1,97 @@
+# Local verification only: isolated database and loopback entry, no real user data.
+name: outdoor-local
+x-app: &app
+  image: outdoor-local:${IMAGE_TAG:-dev}
+  build:
+    context: ..
+    dockerfile: Dockerfile
+  environment: &environment
+    APP_ENV: production
+    DATABASE_URL: postgresql://outdoor:${POSTGRES_PASSWORD:?Run prepare-local.py first}@db:5432/outdoor
+    SECRET_KEY: ${SECRET_KEY:?Run prepare-local.py first}
+    STATIC_DIR: /app/static
+    CORS_ORIGINS: ""
+    DEBUG: "false"
+  networks:
+    - database
+  read_only: true
+  tmpfs:
+    - /tmp
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: outdoor
+      POSTGRES_DB: outdoor
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run prepare-local.py first}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U outdoor -d outdoor"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  migrate:
+    <<: *app
+    command: ["alembic", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  app:
+    <<: *app
+    ports:
+      - "127.0.0.1:${APP_PORT:-18080}:8000"
+    networks:
+      - entry
+      - database
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/ready', timeout=4).read()"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  demo:
+    <<: *app
+    profiles: ["tools"]
+    environment:
+      <<: *environment
+      ENABLE_DEMO_DATA: "true"
+    command: ["python", "-m", "app.seed_demo"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+networks:
+  entry:
+  database:
+    internal: true
+volumes:
+  pgdata:

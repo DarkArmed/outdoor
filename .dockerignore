@@ -1,0 +1,26 @@
+# Build input allowlist. Private data/configuration never enters the context.
+**
+!Dockerfile
+!backend/
+!backend/requirements.txt
+!backend/alembic.ini
+!backend/app/
+!backend/app/**
+!backend/alembic/
+!backend/alembic/**
+!web/
+!web/package.json
+!web/package-lock.json
+!web/index.html
+!web/tsconfig*.json
+!web/vite.config.ts
+!web/src/
+!web/src/**
+**/__pycache__/
+**/*.pyc
+**/.env*
+**/*.db
+**/node_modules/
+**/*.test.*
+**/__fixtures__/
+web/src/test/

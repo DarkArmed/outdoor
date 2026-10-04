@@ -13,6 +13,8 @@
 | T4 | [测试对齐与收尾](t4-测试对齐与收尾.md) | ✅ 已合并 [PR #5](https://github.com/DarkArmed/outdoor/pull/5) | 状态迁移、Vitest、新旧对比、退役 site/；开发 worktree 已清理 |
 | T5 | [小程序客户端](t5-小程序客户端.md) | ✅ 已合并 [PR #6](https://github.com/DarkArmed/outdoor/pull/6) | 微信小程序：登录、计划库、我的出行、勾选打卡、我的；真机登录待验证 |
 
+| T6 | [容器化部署](t6-容器化部署.md) | ✅ 本机实现与验证完成，待合并 | PR #7 统一规划与实现；公网部署待完成 |
+
 ## 如何添加新任务
 
 1. 在此目录下新建 `tN-任务名.md`。
