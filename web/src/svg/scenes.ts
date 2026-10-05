@@ -364,6 +364,67 @@ export function sceneSVG(theme: string, mom = false): string {
 }
 
 /* ============================================================
+   登录/注册页全屏场景（1440×460，贴底铺满，超出裁切）
+   日间 = 方案 A「出发吧」，夜间 = 方案 B「星空夜营」（dark mode）
+   ============================================================ */
+
+function loginRays(r1: number, r2: number, width: number): string {
+  return Array.from({ length: 8 }, (_, i) => {
+    const a = (i * 45 * Math.PI) / 180;
+    const x1 = Math.cos(a) * r1, y1 = Math.sin(a) * r1;
+    const x2 = Math.cos(a) * r2, y2 = Math.sin(a) * r2;
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${SC.sun}" stroke-width="${width}" stroke-linecap="round"/>`;
+  }).join('');
+}
+
+function loginDayInner(): string {
+  return `
+  <g transform="translate(150,110)">
+    ${loginRays(52, 72, 9)}
+    <circle r="42" fill="${SC.sun}"/>
+    <circle cx="-13" cy="-8" r="5" fill="#5B4A00"/>
+    <circle cx="13" cy="-8" r="5" fill="#5B4A00"/>
+    <path d="M -14 9 Q 0 23 14 9" stroke="#5B4A00" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+  <path d="M0 300 Q 220 200 460 280 T 980 260 T 1440 270 V 460 H 0 Z" fill="${SC.hillFar}"/>
+  <path d="M0 350 Q 300 260 640 340 T 1440 320 V 460 H 0 Z" fill="${SC.hillNear}"/>
+  ${scTree(120, 330)}
+  ${scPine(1340, 320, 1.2)}
+  ${scTent(1060, 395, 1.15)}
+  ${scCar(300, 418)}
+  ${scKite(1000, 130)}
+  ${scDadKid(640, 392, 1)}`;
+}
+
+function loginNightInner(): string {
+  const stars = Array.from({ length: 16 }, (_, i) => {
+    const sx = 60 + (i * 167) % 1300, sy = 24 + (i * 89) % 140;
+    return `<circle cx="${sx}" cy="${sy}" r="${2 + (i % 3) * 0.5}" fill="#FFF9DB"/>`;
+  }).join('');
+  return `
+  ${stars}
+  <line x1="1120" y1="60" x2="1180" y2="30" stroke="#FFF9DB" stroke-width="3" stroke-linecap="round" opacity="0.8"/>
+  <g transform="translate(1240,110)">
+    <circle r="42" fill="#FFF4C2"/>
+    <circle cx="-16" cy="-10" r="33" fill="${SC.skyNight}"/>
+  </g>
+  <path d="M0 300 Q 220 200 460 280 T 980 260 T 1440 270 V 460 H 0 Z" fill="#3D4F7C"/>
+  <path d="M0 350 Q 300 260 640 340 T 1440 320 V 460 H 0 Z" fill="#2F3E63"/>
+  ${scPine(130, 320, 1.2, '#1E2B4A')}
+  ${scTree(1330, 330, 1, '#1E2B4A')}
+  ${scTent(300, 400, 1.1)}
+  <path d="M 366 362.6 L 385.8 400 H 346.2 Z" fill="${SC.sun}"/>
+  ${scCampfire(720, 415, 1.1)}
+  ${scDadKid(1030, 398, 1)}`;
+}
+
+/** 登录/注册页场景 SVG（night=true 为星空夜营） */
+export function loginSceneSVG(night = false): string {
+  const label = night ? '星空夜营插图' : '日间营地插图';
+  return `<svg viewBox="0 0 1440 460" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${label}">${night ? loginNightInner() : loginDayInner()}</svg>`;
+}
+
+/* ============================================================
    活动小图（行程时间轴用）：48×48 圆形徽章 + 关键词自动匹配
    ============================================================ */
 function aiBadge(color: string, inner: string) {

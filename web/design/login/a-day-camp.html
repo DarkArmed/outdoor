@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 A · 出发吧！日间营地</title>
+<style>
+  :root {
+    --sky:#7ED6FF; --sky-deep:#4FC3F7; --sun:#FFD93D; --grass:#7CDB6E;
+    --coral:#FF6B6B; --orange:#FFA94D; --ink:#2D3748; --paper:#FFFDF5; --muted:#718096;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Microsoft YaHei","PingFang SC","Comic Sans MS",system-ui,sans-serif;
+    color:var(--ink); min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(#7ED6FF 0%, #B8E9FF 55%, #DFF5D2 100%);
+    overflow:hidden; position:relative; padding:24px;
+  }
+  .scene { position:fixed; inset:auto 0 0 0; width:100%; pointer-events:none; }
+  .scene svg { display:block; width:100%; height:auto; }
+  .cloud { position:fixed; animation:drift linear infinite; opacity:.95; }
+  .cloud.c1 { top:8%;  animation-duration:46s; }
+  .cloud.c2 { top:16%; animation-duration:64s; animation-delay:-30s; transform:scale(.7); }
+  @keyframes drift { from { left:-180px; } to { left:110%; } }
+  .card {
+    position:relative; z-index:2; width:min(420px, 94vw);
+    background:rgba(255,255,255,.92); backdrop-filter:blur(6px);
+    border-radius:24px; padding:36px 32px 28px;
+    box-shadow:0 12px 0 rgb(45 55 72 / 8%), 0 24px 48px rgb(45 55 72 / 15%);
+    display:grid; gap:16px; text-align:center;
+  }
+  .card h1 { font-size:1.7rem; }
+  .card .sub { color:var(--muted); font-size:.95rem; margin-top:-10px; }
+  .field { position:relative; text-align:left; }
+  .field .ico { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:1.05rem; }
+  .field input {
+    width:100%; padding:13px 14px 13px 44px; font-size:1rem;
+    border:2px solid #E2E8F0; border-radius:14px; background:#fff; color:var(--ink);
+  }
+  .field input:focus { outline:none; border-color:var(--sky-deep); box-shadow:0 0 0 4px rgb(79 195 247 / 20%); }
+  .go {
+    padding:14px; border:0; border-radius:999px; font-size:1.1rem; font-weight:700;
+    background:var(--sun); color:var(--ink); cursor:pointer;
+    box-shadow:0 4px 0 #E0B700; transition:transform .12s, box-shadow .12s;
+  }
+  .go:hover { transform:translateY(-2px); box-shadow:0 6px 0 #E0B700; }
+  .go:active { transform:translateY(2px); box-shadow:0 2px 0 #E0B700; }
+  .reg { font-size:.92rem; color:var(--muted); }
+  .reg a { color:var(--sky-deep); font-weight:700; text-decoration:none; }
+  .tag { font-size:.8rem; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="cloud c1">
+  <svg width="150" height="60" viewBox="0 0 150 60"><g fill="#fff"><ellipse cx="40" cy="38" rx="34" ry="18"/><ellipse cx="70" cy="26" rx="26" ry="16"/><ellipse cx="100" cy="38" rx="30" ry="16"/></g></svg>
+</div>
+<div class="cloud c2">
+  <svg width="150" height="60" viewBox="0 0 150 60"><g fill="#fff"><ellipse cx="40" cy="38" rx="34" ry="18"/><ellipse cx="70" cy="26" rx="26" ry="16"/><ellipse cx="100" cy="38" rx="30" ry="16"/></g></svg>
+</div>
+
+<div class="scene">
+  <svg viewBox="0 0 1440 460" preserveAspectRatio="xMidYMax slice">
+    <!-- 微笑太阳 -->
+    <g transform="translate(150,110)">
+      <g stroke="#FFD93D" stroke-width="9" stroke-linecap="round">
+        <line x1="0" y1="-52" x2="0" y2="-72"/><line x1="37" y1="-37" x2="51" y2="-51"/>
+        <line x1="52" y1="0" x2="72" y2="0"/><line x1="37" y1="37" x2="51" y2="51"/>
+        <line x1="0" y1="52" x2="0" y2="72"/><line x1="-37" y1="37" x2="-51" y2="51"/>
+        <line x1="-52" y1="0" x2="-72" y2="0"/><line x1="-37" y1="-37" x2="-51" y2="-51"/>
+      </g>
+      <circle r="42" fill="#FFD93D"/>
+      <circle cx="-13" cy="-8" r="5" fill="#5B4A00"/><circle cx="13" cy="-8" r="5" fill="#5B4A00"/>
+      <path d="M-14 9 Q0 23 14 9" stroke="#5B4A00" stroke-width="5" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- 远山近丘 -->
+    <path d="M0 300 Q 220 200 460 280 T 980 260 T 1440 270 V 460 H 0 Z" fill="#A5E08A"/>
+    <path d="M0 350 Q 300 260 640 340 T 1440 320 V 460 H 0 Z" fill="#7CDB6E"/>
+    <!-- 树 -->
+    <g transform="translate(120,330)"><rect x="-7" y="0" width="14" height="40" rx="5" fill="#8D5A3B"/><circle cx="0" cy="-22" r="34" fill="#43A047"/><circle cx="-24" cy="-4" r="23" fill="#43A047"/><circle cx="24" cy="-4" r="23" fill="#43A047"/></g>
+    <g transform="translate(1340,320) scale(1.2)"><rect x="-5" y="0" width="10" height="22" rx="3" fill="#8D5A3B"/><path d="M0 -70 L 26 -28 H 14 L 30 0 H -30 L -14 -28 H -26 Z" fill="#4CAF50"/></g>
+    <!-- 帐篷 -->
+    <g transform="translate(1060,395) scale(1.15)">
+      <path d="M0 0 L 60 -78 L 120 0 Z" fill="#FF8A65"/>
+      <path d="M60 -78 L 120 0 H 78 L 60 -34 Z" fill="#E85D3D"/>
+      <path d="M60 -34 L 78 0 H 42 Z" fill="#5D4037"/>
+      <line x1="-8" y1="0" x2="128" y2="0" stroke="#8D5A3B" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <!-- 小汽车 -->
+    <g transform="translate(300,418)">
+      <rect x="-50" y="-22" width="100" height="26" rx="10" fill="#FF6B6B"/>
+      <path d="M-32 -22 L -20 -40 H 16 L 30 -22 Z" fill="#FF6B6B"/>
+      <rect x="-18" y="-38" width="14" height="14" rx="3" fill="#BDE8FF"/>
+      <rect x="2" y="-38" width="14" height="14" rx="3" fill="#BDE8FF"/>
+      <circle cx="-28" cy="6" r="12" fill="#2D3748"/><circle cx="28" cy="6" r="12" fill="#2D3748"/>
+      <circle cx="-28" cy="6" r="5" fill="#A0AEC0"/><circle cx="28" cy="6" r="5" fill="#A0AEC0"/>
+    </g>
+    <!-- 风筝 -->
+    <g transform="translate(860,140)">
+      <path d="M0 -26 L 20 0 L 0 30 L -20 0 Z" fill="#FF8FAB"/>
+      <path d="M0 30 Q 8 44 -4 52 T 6 70" stroke="#FF8FAB" stroke-width="3" fill="none"/>
+      <line x1="-20" y1="0" x2="20" y2="0" stroke="#fff" stroke-width="2"/>
+      <line x1="0" y1="-26" x2="0" y2="30" stroke="#fff" stroke-width="2"/>
+    </g>
+    <!-- 父子牵手 -->
+    <g transform="translate(620,392)">
+      <g><line x1="-8" y1="0" x2="-8" y2="26" stroke="#4A5568" stroke-width="9" stroke-linecap="round"/><line x1="8" y1="0" x2="8" y2="26" stroke="#4A5568" stroke-width="9" stroke-linecap="round"/><rect x="-14" y="-34" width="28" height="38" rx="12" fill="#5B8DEF"/><line x1="-14" y1="-26" x2="-26" y2="-8" stroke="#5B8DEF" stroke-width="8" stroke-linecap="round"/><circle cx="0" cy="-50" r="15" fill="#FFDCB5"/><circle cx="-5" cy="-52" r="2" fill="#333"/><circle cx="5" cy="-52" r="2" fill="#333"/><path d="M-5 -44 Q0 -40 5 -44" stroke="#333" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M-16 -56 A 16 16 0 0 1 16 -56 L 20 -52 H -20 Z" fill="#FFD93D"/></g>
+      <g transform="translate(50,8) scale(.72)"><line x1="-8" y1="0" x2="-8" y2="26" stroke="#4A5568" stroke-width="9" stroke-linecap="round"/><line x1="8" y1="0" x2="8" y2="26" stroke="#4A5568" stroke-width="9" stroke-linecap="round"/><rect x="-14" y="-34" width="28" height="38" rx="12" fill="#FF6B6B"/><line x1="14" y1="-26" x2="26" y2="-8" stroke="#FF6B6B" stroke-width="8" stroke-linecap="round"/><circle cx="0" cy="-50" r="15" fill="#FFDCB5"/><circle cx="-5" cy="-52" r="2" fill="#333"/><circle cx="5" cy="-52" r="2" fill="#333"/><path d="M-5 -44 Q0 -40 5 -44" stroke="#333" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M-16 -56 A 16 16 0 0 1 16 -56 L 20 -52 H -20 Z" fill="#FFA94D"/></g>
+      <line x1="20" y1="-14" x2="40" y2="-8" stroke="#5B8DEF" stroke-width="7" stroke-linecap="round"/>
+    </g>
+  </svg>
+</div>
+
+<form class="card">
+  <h1>🏕️ 户外大冒险</h1>
+  <p class="sub">登录，继续这个周末的冒险</p>
+  <div class="field"><span class="ico">📧</span><input type="email" placeholder="邮箱" aria-label="邮箱"></div>
+  <div class="field"><span class="ico">🔒</span><input type="password" placeholder="密码" aria-label="密码"></div>
+  <button class="go" type="button">出发探险 →</button>
+  <p class="reg">还没有账号？<a href="#">注册一个</a></p>
+  <p class="tag">☀️ 天气不错，适合出门</p>
+</form>
+
+</body>
+</html>

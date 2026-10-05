@@ -1,0 +1,187 @@
+/* ---------- 登录/注册页：方案 A 日间营地 + 方案 B 星空夜营（dark mode） ---------- */
+.auth-page {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  overflow: auto;
+  background: linear-gradient(#7ed6ff 0%, #b8e9ff 55%, #dff5d2 100%);
+}
+.auth-page.night {
+  background: linear-gradient(#141c33 0%, #2b3a67 60%, #3d4f7c 100%);
+}
+.auth-scene {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+.auth-scene svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.auth-cloud {
+  position: absolute;
+  animation: auth-drift linear infinite;
+  opacity: 0.95;
+  pointer-events: none;
+}
+.auth-cloud.c1 { top: 8%; animation-duration: 46s; }
+.auth-cloud.c2 { top: 16%; animation-duration: 64s; animation-delay: -30s; transform: scale(0.7); }
+@keyframes auth-drift {
+  from { left: -180px; }
+  to { left: 110%; }
+}
+.auth-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 520px;
+  height: 520px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 217 61 / 28%) 0%, rgb(255 159 67 / 12%) 40%, transparent 70%);
+  animation: auth-flicker 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes auth-flicker {
+  0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.06); }
+}
+.auth-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 1.1rem;
+  background: rgb(255 255 255 / 85%);
+  box-shadow: 0 3px 0 rgb(45 55 72 / 12%);
+}
+.auth-page.night .auth-toggle {
+  background: rgb(30 43 74 / 85%);
+}
+.auth-home {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 3;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--color-ink);
+  background: rgb(255 255 255 / 85%);
+  box-shadow: 0 3px 0 rgb(45 55 72 / 12%);
+}
+.auth-page.night .auth-home {
+  color: #fff;
+  background: rgb(30 43 74 / 85%);
+}
+.auth-card {
+  position: relative;
+  z-index: 2;
+  width: min(420px, 94vw);
+  background: rgb(255 255 255 / 92%);
+  backdrop-filter: blur(6px);
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  box-shadow: 0 12px 0 rgb(45 55 72 / 8%), 0 24px 48px rgb(45 55 72 / 15%);
+  display: grid;
+  gap: 16px;
+  text-align: center;
+}
+.auth-page.night .auth-card {
+  background: rgb(255 253 245 / 96%);
+  box-shadow: 0 0 0 4px rgb(255 217 61 / 18%), 0 24px 60px rgb(0 0 0 / 45%);
+}
+.auth-brand {
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+.auth-sub {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  margin-top: -10px;
+}
+.auth-error {
+  color: var(--color-coral);
+  font-weight: 700;
+}
+.auth-error-link {
+  color: var(--color-sky-deep);
+  text-decoration: underline;
+}
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+.auth-field {
+  position: relative;
+  text-align: left;
+}
+.auth-field .ico {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.05rem;
+}
+.auth-field input {
+  width: 100%;
+  padding: 13px 14px 13px 44px;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--color-ink);
+}
+.auth-field input:focus {
+  outline: none;
+  border-color: var(--color-sky-deep);
+  box-shadow: 0 0 0 4px rgb(79 195 247 / 20%);
+}
+.auth-page.night .auth-field input:focus {
+  border-color: var(--color-orange);
+  box-shadow: 0 0 0 4px rgb(255 169 77 / 22%);
+}
+.auth-go {
+  padding: 14px;
+  border: 0;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: var(--color-sun);
+  color: var(--color-ink);
+  box-shadow: 0 4px 0 #e0b700;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.auth-go:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 0 #e0b700; }
+.auth-go:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #e0b700; }
+.auth-page.night .auth-go {
+  background: linear-gradient(135deg, #ffd93d, #ffa94d);
+  color: #5b3a00;
+  box-shadow: 0 4px 0 #c77e1f;
+}
+.auth-page.night .auth-go:hover:not(:disabled) { box-shadow: 0 6px 0 #c77e1f; }
+.auth-page.night .auth-go:active:not(:disabled) { box-shadow: 0 2px 0 #c77e1f; }
+.auth-reg {
+  font-size: 0.92rem;
+  color: var(--color-muted);
+}
+.auth-reg a {
+  color: var(--color-sky-deep);
+  font-weight: 700;
+  text-decoration: none;
+}
+.auth-tag {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
