@@ -26,6 +26,12 @@ node_modules/
 # 本地 npm 缓存（不入库）
 .npm-cache/
 
+# 攻略语料库（第三方原文与媒体，不进 git）
+corpus/
+# 攻略流水线登录凭据与本地配置（不进 git）
+tools/guide-pipeline/.cookies/
+tools/guide-pipeline/config.json
+
 .pytest_cache/
 
 # Local container verification
