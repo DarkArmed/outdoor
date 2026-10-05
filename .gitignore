@@ -31,6 +31,8 @@ corpus/
 # 攻略流水线登录凭据与本地配置（不进 git）
 tools/guide-pipeline/.cookies/
 tools/guide-pipeline/config.json
+# 攻略流水线虚拟环境（不进 git）
+tools/guide-pipeline/.venv/
 
 .pytest_cache/
 

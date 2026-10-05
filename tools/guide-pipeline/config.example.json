@@ -1,0 +1,13 @@
+{
+  "video_max_bytes": 20971520,
+  "rate_limits": {
+    "default": { "search_interval_s": 5, "detail_interval_s": 3, "daily_cap": 200 },
+    "xhs": { "search_interval_s": 8, "detail_interval_s": 5, "daily_cap": 100 }
+  },
+  "media": { "concurrency": 2, "max_retries": 3 },
+  "destination_groups": [
+    { "name": "泛主题-亲子徒步", "keywords": ["北京亲子徒步", "北京遛娃爬山"], "cap": 5 },
+    { "name": "白河湾", "keywords": ["白河湾"], "cap": 5 },
+    { "name": "神堂峪", "keywords": ["神堂峪"], "cap": 5 }
+  ]
+}
