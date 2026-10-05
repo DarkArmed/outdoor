@@ -96,6 +96,9 @@ _LIST_JS = r"""
   const items = [];
   const seen = new Set();
   for (const a of document.querySelectorAll('a[href*="/search_result/"], a[href*="/explore/"]')) {
+    // 卡片里有两种锚点：裸 /explore/<id>（display:none，无 token，打开必 404）
+    // 和 /search_result/<id>?xsec_token=...（真实可用）；只收带 token 的
+    if (!a.href.includes('xsec_token=')) continue;
     const m = a.href.match(/\/(?:search_result|explore)\/([0-9a-f]{24})/);
     if (!m) continue;
     const id = m[1];
@@ -105,7 +108,8 @@ _LIST_JS = r"""
     const title = card ? (card.querySelector('.title, [class*="title"]') || {}).textContent || '' : '';
     const author = card ? (card.querySelector('.author .name, [class*="name"]') || {}).textContent || '' : '';
     const likes = card ? (card.querySelector('.count, [class*="like"] .count') || {}).textContent || '' : '';
-    items.push({id, title: title.trim(), author: author.trim(), likes: likes.trim()});
+    // 保留完整 href：详情页必须带 xsec_token，否则 404（error_code=300031）
+    items.push({id, url: a.href, title: title.trim(), author: author.trim(), likes: likes.trim()});
     if (items.length >= 30) break;
   }
   return items;
@@ -184,7 +188,7 @@ class XhsAdapter(SourceAdapter):
                 Ref(
                     source=self.source,
                     id=it["id"],
-                    url=NOTE_URL.format(note_id=it["id"]),
+                    url=it.get("url") or NOTE_URL.format(note_id=it["id"]),
                     title=it.get("title") or "",
                     author_name=it.get("author") or "",
                     author_id="",
@@ -198,6 +202,9 @@ class XhsAdapter(SourceAdapter):
         self.page.wait_for_timeout(2_500)
         if _looks_blocked(self.page):
             raise XhsBlocked(f"小红书详情触发登录墙/验证: {ref.url}")
+        if "/404" in self.page.url:
+            # 笔记被删/不可见（缺 xsec_token 或已下架）：跳过本条，不算风控
+            raise ValueError(f"笔记不可浏览(404): {ref.url}")
 
         data = self.page.evaluate(_DETAIL_STATE_JS, ref.id)
         if not data:  # DOM 兜底（页面结构漂移时尽量保住正文）
