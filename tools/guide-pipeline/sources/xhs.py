@@ -135,9 +135,31 @@ _DETAIL_STATE_JS = r"""
     comments: n.interactInfo ? n.interactInfo.commentCount : null,
     plays: n.interactInfo ? n.interactInfo.shareCount : null,
     images: (n.imageList || []).map(i => i.urlDefault || i.url || ''),
-    video: n.video ? (n.video.url || (n.video.stream || {}).h264 || '') : '',
-    cover: n.video ? n.video.cover : '',
-    duration: n.video ? n.video.duration : null,
+    noteType: n.type || '',
+    // 视频（2026-10 实测结构）：n.video.media.stream 是按流类型分组的对象
+    // （EF4/EF5/...），每组是变体数组，含 masterUrl/backupUrls/size/duration/
+    // videoCodec/defaultStream；时长在 n.video.capa.duration；封面用图集首图
+    video: (() => {
+      if (!n.video || !n.video.media || !n.video.media.stream) return null;
+      const variants = [];
+      for (const arr of Object.values(n.video.media.stream)) {
+        if (!Array.isArray(arr)) continue;
+        for (const v of arr) {
+          if (v && v.masterUrl) variants.push(v);
+        }
+      }
+      if (!variants.length) return null;
+      // 优先默认流；否则取体积最小（配合 20MB 阈值尽量少超限）
+      variants.sort((a, b) => (b.defaultStream ? 1 : 0) - (a.defaultStream ? 1 : 0) || (a.size || 1e18) - (b.size || 1e18));
+      const v = variants[0];
+      return {
+        url: v.masterUrl,
+        backup: (v.backupUrls || [])[0] || '',
+        size: v.size || null,
+        duration: (n.video.capa && n.video.capa.duration) || v.duration || null,
+        cover: (n.imageList && n.imageList[0] && (n.imageList[0].urlDefault || n.imageList[0].url)) || '',
+      };
+    })(),
   };
 }
 """
@@ -220,11 +242,12 @@ class XhsAdapter(SourceAdapter):
             }
         images = [MediaItem(origin_url=u) for u in (data.get("images") or []) if u]
         videos = []
-        if data.get("video"):
+        v = data.get("video")
+        if isinstance(v, dict) and v.get("url"):
             videos.append(MediaItem(
-                origin_url=data["video"],
-                cover=data.get("cover") or None,
-                duration_s=data.get("duration"),
+                origin_url=v["url"],
+                cover=v.get("cover") or None,
+                duration_s=v.get("duration"),
             ))
         return RawItem(
             source=self.source,
