@@ -38,8 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (email: string, password: string) => {
+    // 不触碰全局 loading：GuestOnly/RequireAuth 会因此卸载登录页，
+    // 导致失败时错误提示随组件状态一起丢失（loading 仅用于初始会话恢复）
     const current = ++revision.current
-    setLoading(true)
     try {
       const data = await api.login(email, password)
       if (revision.current !== current) return
@@ -55,8 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
       }
       throw error
-    } finally {
-      if (revision.current === current) setLoading(false)
     }
   }
 
