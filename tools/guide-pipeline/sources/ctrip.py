@@ -61,24 +61,19 @@ _DETAIL_JS = r"""
     if (label && value) boxes[label] = value;
   });
 
-  // 正文块按文档顺序（小节标题与段落）
+  // 正文块按文档顺序（小节标题与段落）。
+  // 两种模板并存：旧版 div.content / h5.menu；新版 div.travel-content-wrapper（2026-10 实测）
   const blocks = [];
-  document.querySelectorAll('h5.menu, div.content').forEach(el => {
-    if (el.tagName === 'H5') {
-      const t = (el.textContent || '').trim();
-      if (t) blocks.push({type: 'h', text: t});
-    } else {
-      el.querySelectorAll('p').forEach(p => {
-        const t = (p.textContent || '').replace(/\s+/g, ' ').trim();
-        if (t) blocks.push({type: 'p', text: t});
-      });
-    }
+  document.querySelectorAll('h5.menu, div.content p, div.travel-content-wrapper h2, div.travel-content-wrapper h3, div.travel-content-wrapper h4, div.travel-content-wrapper p').forEach(el => {
+    const t = (el.textContent || '').replace(/\s+/g, ' ').trim();
+    if (!t) return;
+    blocks.push({type: el.tagName === 'P' ? 'p' : 'h', text: t});
   });
 
-  // 图片：CDN 缩放 URL 升级回原图（去 _W_x_y_Qz 尺寸后缀与 proc 参数），失败保留原样
+  // 图片：两种模板都收；CDN 缩放 URL 升级回原图（去 _W_x_y_Qz 尺寸后缀与 proc 参数），失败保留原样
   const images = [];
   const seen = new Set();
-  document.querySelectorAll('div.content img').forEach(img => {
+  document.querySelectorAll('div.content img, div.travel-content-wrapper img').forEach(img => {
     let src = img.getAttribute('data-src') || img.getAttribute('src') || '';
     if (!src || src.startsWith('data:')) return;
     const m = src.match(/^(https?:\/\/[^/]+\/images\/[^_]+)_W_\d+_\d+_Q\d+(\.\w+)(?:\?.*)?$/);
