@@ -111,7 +111,7 @@ def main() -> int:
     fetched_new = 0
     try:
         for keyword, matched_groups in plan:
-            full_groups = [g for g in matched_groups if store.count_group(g) >= group_caps.get(g, DEFAULT_GROUP_CAP)]
+            full_groups = [g for g in matched_groups if store.count_group(g, args.source) >= group_caps.get(g, DEFAULT_GROUP_CAP)]
             if matched_groups and len(full_groups) == len(matched_groups):
                 print(f"[skip] 关键词「{keyword}」的目的地组已满额: {matched_groups}")
                 continue
@@ -130,7 +130,7 @@ def main() -> int:
                 if store.count_fetched_today(args.source, today) >= daily_cap:
                     print(f"[stop] 已达单源每日上限 {daily_cap} 条")
                     return 0
-                if matched_groups and all(store.count_group(g) >= group_caps.get(g, DEFAULT_GROUP_CAP) for g in matched_groups):
+                if matched_groups and all(store.count_group(g, args.source) >= group_caps.get(g, DEFAULT_GROUP_CAP) for g in matched_groups):
                     break  # 该关键词命中的组全部满额
 
                 if store.has(ref.source, ref.id):

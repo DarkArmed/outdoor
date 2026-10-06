@@ -2,7 +2,7 @@
 
 合规红线（docs/tech/攻略流水线.md 第六节）：meta.json 缺 url 或 author 的条目拒绝落盘。
 去重：index.jsonl 按 source + id 查重（docs/tech/攻略流水线.md 第三节）。
-目的地限额：某「目的地/主题组」已采篇数按索引中 destinations 计数（一条语料命中多组分别计数）。
+目的地限额：某「目的地/主题组」已采篇数按索引中 destinations 计数，**按「组 × 源」分别计**（2026-10-06 用户确认：避免先跑的源占满名额）；一条语料命中多组分别计数。
 """
 
 from __future__ import annotations
@@ -55,9 +55,18 @@ class Store:
     def get(self, source: str, id: str) -> Optional[dict]:
         return self._index.get((source, str(id)))
 
-    def count_group(self, group_name: str) -> int:
-        """该目的地/主题组已采篇数（索引中 destinations 含组名）。"""
-        return sum(1 for rec in self._index.values() if group_name in (rec.get("destinations") or []))
+    def count_group(self, group_name: str, source: str | None = None) -> int:
+        """该目的地/主题组已采篇数（索引中 destinations 含组名）。
+
+        限额语义为「组 × 源」分别计数（2026-10-06 用户确认）：跨源合并计数会让
+        先跑的源占满名额、后跑的源（如 P0 小红书）永远轮不到。
+        """
+        return sum(
+            1
+            for rec in self._index.values()
+            if group_name in (rec.get("destinations") or [])
+            and (source is None or rec.get("source") == source)
+        )
 
     def count_fetched_today(self, source: str, date_prefix: str) -> int:
         """单源今日已采条数（fetched_at 的日期前缀匹配），用于每日上限。"""
