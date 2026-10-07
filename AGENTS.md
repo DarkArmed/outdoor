@@ -65,6 +65,12 @@ outdoor/
 - 机制与约定（认证流程、API 用法、gear 扁平索引、里程碑评估、坐标转换）见 `docs/tech/小程序.md`；需求 PRD-005、选型 ADR-004。
 - UI 迭代以 `miniprogram/design/prototype/` 的 HTML 原型为准（先改原型再改页面）。
 
+## 攻略流水线（tools/guide-pipeline/）
+
+- 作用：从小红书/微博/携程等平台采集户外攻略**原文**（文字 + 图片 + 视频）到本地语料库 `corpus/`（gitignore），供后续方案多样化参考；一期只存档原文，不做标准化。
+- 状态：设计阶段。需求 PRD-006、选型 ADR-006、机制与运行方式见 `docs/tech/攻略流水线.md`。
+- 红线：语料仅个人参考、保留出处、不二次分发；cookie 与 `corpus/` 不进 git；遇反爬升级即停采该源，不对抗。
+
 ## 用户配置（config/profile.json）
 
 - **流水线与默认账号种子来源**：家位置、出行成员、孩子信息（小名/出生年份/耐力/兴趣/过敏）、出行偏好；gitignore，模板为 `config/profile.example.json`。
