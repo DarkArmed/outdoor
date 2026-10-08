@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
-"""校验 data/data-e.js 派生方案：数据契约 + 合规（PoC 版，对应语料转方案.md §五步骤5）。
+"""校验 data/data-e.js 派生方案：数据契约 + 合规（语料转方案.md §五步骤5、§4.4 禁止项）。
 
 用法：
-  python validate.py --corpus-root C:/Repos/outdoor/corpus [--repo-root ..]
-退出码：0 全过；1 有失败项。
+  python validate.py [--corpus-root C:/Repos/outdoor/corpus] [--repo-root ..] [--strict]
+
+corpus-root 缺省解析：--corpus-root 参数 > 环境变量 CORPUS_ROOT > 仓库根 corpus/；
+找不到时给出指定方式说明（worktree 中需显式指向主检出）。
+
+校验内容：
+  - dump-data.js 可解析，且存在 derived-* 方案；
+  - 契约字段：必填/枚举（type、theme）/类型/tasks 3 条/review 4 问/itinerary、gear、hike 结构；
+  - 合规：无平台名/URL/作者名；与所引语料无 ≥8 字连续重合（目的地专名豁免）；
+    draft.sources ≥1 条且引用的语料存在。
+退出码：0 全过；1 有失败项（--strict 时警告也算失败）。
 """
 import argparse
 import json
@@ -11,6 +20,8 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+import corpus_root
 
 sys.stdout.reconfigure(encoding='utf-8')
 
@@ -154,12 +165,20 @@ def check_compliance(plan, corpus_root, drafts):
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--corpus-root', required=True)
-    ap.add_argument('--repo-root', default=str(Path(__file__).resolve().parents[2]))
+    ap = argparse.ArgumentParser(
+        description='校验 data/data-e.js 派生方案：数据契约 + 原创性/合规（n-gram 重合、平台名/URL/作者名）。',
+        epilog='示例：\n'
+               '  python validate.py --corpus-root C:/Repos/outdoor/corpus\n'
+               '  python validate.py --strict   # 警告也算失败\n'
+               'corpus-root 缺省解析：参数 > 环境变量 CORPUS_ROOT > 仓库根 corpus/。',
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('--corpus-root', help='语料库根目录；缺省解析见上')
+    ap.add_argument('--repo-root', default=str(Path(__file__).resolve().parents[2]),
+                    help='仓库根（定位 tools/dump-data.js 与 data/），缺省为脚本所在仓库')
+    ap.add_argument('--strict', action='store_true', help='警告也导致退出码 1')
     args = ap.parse_args()
     repo = Path(args.repo_root)
-    corpus = Path(args.corpus_root)
+    corpus = corpus_root.resolve(args.corpus_root)
 
     result = subprocess.run(['node', str(repo / 'tools' / 'dump-data.js')], cwd=repo,
                             capture_output=True, text=True, encoding='utf-8', errors='replace')
@@ -187,7 +206,7 @@ def main():
     for e in errors:
         print('FAIL ' + e)
     print(f'\n校验 {len(derived)} 条派生方案: {len(errors)} 个失败, {len(warnings)} 个警告')
-    sys.exit(1 if errors else 0)
+    sys.exit(1 if errors or (args.strict and warnings) else 0)
 
 
 if __name__ == '__main__':
