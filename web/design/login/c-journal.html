@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方案 C · 冒险手账</title>
+<style>
+  :root {
+    --paper:#FFFDF5; --ink:#2D3748; --muted:#718096;
+    --sky:#7ED6FF; --sky-deep:#4FC3F7; --sun:#FFD93D; --grass:#7CDB6E;
+    --coral:#FF6B6B; --orange:#FFA94D; --pink:#FF8FAB;
+  }
+  * { box-sizing:border-box; margin:0; }
+  body {
+    font-family:"Microsoft YaHei","PingFang SC","Comic Sans MS",system-ui,sans-serif;
+    color:var(--ink); min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:var(--paper);
+    background-image:radial-gradient(#EADFC8 1.2px, transparent 1.2px);
+    background-size:26px 26px;
+    padding:24px;
+  }
+  /* 贴纸：漂浮小元素 */
+  .sticker { position:fixed; filter:drop-shadow(0 4px 6px rgb(45 55 72 / 18%)); animation:bob 5s ease-in-out infinite; }
+  .sticker.s1 { top:10%; left:8%; transform:rotate(-10deg); }
+  .sticker.s2 { top:14%; right:10%; transform:rotate(8deg); animation-delay:-2s; }
+  .sticker.s3 { bottom:12%; left:12%; transform:rotate(6deg); animation-delay:-1s; }
+  .sticker.s4 { bottom:16%; right:8%; transform:rotate(-6deg); animation-delay:-3.5s; }
+  @keyframes bob { 0%,100% { margin-top:0; } 50% { margin-top:-12px; } }
+  /* 手账卡片 */
+  .journal {
+    position:relative; width:min(440px, 94vw);
+    background:#fff; border-radius:6px 22px 6px 22px;
+    padding:44px 36px 30px;
+    box-shadow:0 3px 0 rgb(45 55 72 / 8%), 0 18px 40px rgb(45 55 72 / 12%);
+    border:2px dashed #E2D9C2;
+    display:grid; gap:14px; text-align:center;
+  }
+  /* 和纸胶带 */
+  .tape {
+    position:absolute; top:-14px; left:50%; transform:translateX(-50%) rotate(-2deg);
+    width:150px; height:34px; background:rgb(126 214 255 / 75%);
+    border-left:2px dashed rgb(255 255 255 / 70%); border-right:2px dashed rgb(255 255 255 / 70%);
+    box-shadow:0 2px 4px rgb(45 55 72 / 12%);
+  }
+  .journal h1 { font-size:1.6rem; }
+  .journal h1 .hl { background:linear-gradient(transparent 60%, var(--sun) 60%); padding:0 4px; }
+  .sub { color:var(--muted); font-size:.92rem; margin-top:-8px; }
+  /* 出行清单小票 */
+  .ticket {
+    text-align:left; font-size:.88rem; color:var(--muted);
+    background:repeating-linear-gradient(#FFFDF5 0 26px, #F3EDDC 26px 27px);
+    border:1px solid #EDE4CE; border-radius:12px; padding:10px 16px; line-height:27px;
+  }
+  .ticket b { color:var(--ink); }
+  .ticket .done { color:var(--grass-dk, #4CAF50); }
+  .ticket .todo { color:var(--coral); font-weight:700; }
+  .field { position:relative; text-align:left; }
+  .field .ico { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:1.05rem; }
+  .field input {
+    width:100%; padding:12px 14px 12px 44px; font-size:1rem;
+    border:2px solid #E2D9C2; border-radius:12px; background:var(--paper); color:var(--ink);
+  }
+  .field input:focus { outline:none; border-color:var(--sky-deep); box-shadow:0 0 0 4px rgb(79 195 247 / 18%); background:#fff; }
+  /* 印章按钮 */
+  .stamp {
+    justify-self:center; padding:12px 42px; border:0; border-radius:10px;
+    font-size:1.1rem; font-weight:900; letter-spacing:4px;
+    background:var(--coral); color:#fff; cursor:pointer;
+    box-shadow:0 4px 0 #D84A4A; transform:rotate(-2deg);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .stamp:hover { transform:rotate(-2deg) translateY(-2px); box-shadow:0 6px 0 #D84A4A; }
+  .stamp:active { transform:rotate(-2deg) translateY(2px); box-shadow:0 2px 0 #D84A4A; }
+  .divider { border:0; border-top:2px dashed #E2D9C2; }
+  .reg { font-size:.92rem; color:var(--muted); }
+  .reg a { color:var(--sky-deep); font-weight:700; text-decoration:none; }
+</style>
+</head>
+<body>
+
+<!-- 贴纸：风筝 -->
+<svg class="sticker s1" width="90" height="110" viewBox="0 0 60 90">
+  <circle cx="30" cy="30" r="28" fill="#fff"/>
+  <path d="M30 8 L46 30 L30 52 L14 30 Z" fill="#FF8FAB"/>
+  <line x1="14" y1="30" x2="46" y2="30" stroke="#fff" stroke-width="2.5"/>
+  <line x1="30" y1="8" x2="30" y2="52" stroke="#fff" stroke-width="2.5"/>
+  <path d="M30 52 Q 38 64 26 70 T 34 86" stroke="#FF8FAB" stroke-width="3" fill="none"/>
+</svg>
+<!-- 贴纸：太阳 -->
+<svg class="sticker s2" width="96" height="96" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="46" fill="#fff"/>
+  <g transform="translate(50,50)">
+    <g stroke="#FFD93D" stroke-width="6" stroke-linecap="round">
+      <line x1="0" y1="-26" x2="0" y2="-36"/><line x1="18" y1="-18" x2="25" y2="-25"/>
+      <line x1="26" y1="0" x2="36" y2="0"/><line x1="18" y1="18" x2="25" y2="25"/>
+      <line x1="0" y1="26" x2="0" y2="36"/><line x1="-18" y1="18" x2="-25" y2="25"/>
+      <line x1="-26" y1="0" x2="-36" y2="0"/><line x1="-18" y1="-18" x2="-25" y2="-25"/>
+    </g>
+    <circle r="20" fill="#FFD93D"/>
+    <circle cx="-6" cy="-4" r="2.6" fill="#5B4A00"/><circle cx="6" cy="-4" r="2.6" fill="#5B4A00"/>
+    <path d="M-7 5 Q0 12 7 5" stroke="#5B4A00" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>
+<!-- 贴纸：帐篷 -->
+<svg class="sticker s3" width="110" height="90" viewBox="0 0 130 90">
+  <circle cx="62" cy="45" r="42" fill="#fff"/>
+  <g transform="translate(10,78)">
+    <path d="M0 0 L 42 -56 L 84 0 Z" fill="#FF8A65"/>
+    <path d="M42 -56 L 84 0 H 56 L 42 -24 Z" fill="#E85D3D"/>
+    <path d="M42 -24 L 56 0 H 30 Z" fill="#5D4037"/>
+  </g>
+</svg>
+<!-- 贴纸：徽章 -->
+<svg class="sticker s4" width="92" height="92" viewBox="0 0 60 60">
+  <circle cx="30" cy="30" r="27" fill="#fff"/>
+  <circle cx="30" cy="30" r="21" fill="#7CDB6E"/>
+  <path d="M30 15 L33.5 25 L44 25 L35.5 31.5 L38.5 42 L30 35.5 L21.5 42 L24.5 31.5 L16 25 L26.5 25 Z" fill="#FFD93D"/>
+</svg>
+
+<form class="journal">
+  <div class="tape"></div>
+  <h1><span class="hl">户外大冒险</span> 手账</h1>
+  <p class="sub">第 N 页 · 登录这一页，故事继续</p>
+
+  <div class="ticket">
+    <b>本周出发前清单</b><br>
+    <span class="done">☑ 帐篷、睡袋</span><br>
+    <span class="done">☑ 水壶、零食</span><br>
+    <span class="todo">☐ 登录账号（就差这一步！）</span>
+  </div>
+
+  <div class="field"><span class="ico">📧</span><input type="email" placeholder="邮箱" aria-label="邮箱"></div>
+  <div class="field"><span class="ico">🔒</span><input type="password" placeholder="密码" aria-label="密码"></div>
+
+  <button class="stamp" type="button">盖章出发</button>
+
+  <hr class="divider">
+  <p class="reg">还没有账号？<a href="#">新开一页手账</a></p>
+</form>
+
+</body>
+</html>
