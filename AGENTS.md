@@ -68,8 +68,14 @@ outdoor/
 ## 攻略流水线（tools/guide-pipeline/）
 
 - 作用：从小红书/微博/携程等平台采集户外攻略**原文**（文字 + 图片 + 视频）到本地语料库 `corpus/`（gitignore），供后续方案多样化参考；一期只存档原文，不做标准化。
-- 状态：设计阶段。需求 PRD-006、选型 ADR-006、机制与运行方式见 `docs/tech/攻略流水线.md`。
+- 状态：一期已投产（持续采集）；需求 PRD-006、选型 ADR-006、机制与运行方式见 `docs/tech/攻略流水线.md`。
 - 红线：语料仅个人参考、保留出处、不二次分发；cookie 与 `corpus/` 不进 git；遇反爬升级即停采该源，不对抗。
+
+## 语料转方案流水线（tools/plan-pipeline/）
+
+- 作用：把 `corpus/` 语料转换为系统可用的出行方案（PRD-007）：选料（select.py）→ agent 提取 draft（`corpus/derived/`，gitignore）→ 校验（validate.py：契约 + 原创性 n-gram）→ 落盘 `data/data-e.js`（archived 备用计划）。
+- 机制与验证目标见 `docs/tech/语料转方案.md`；选型 ADR-007。方案文字必须原创重写，不得含语料原文/作者/链接。
+- 语料库在仓库主检出（`corpus/` gitignore），worktree 里运行工具时用 `--corpus-root` 指向主检出路径。
 
 ## 用户配置（config/profile.json）
 
