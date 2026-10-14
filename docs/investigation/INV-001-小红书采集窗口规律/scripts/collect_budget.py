@@ -1,4 +1,8 @@
-"""Local, resumable raw-only collection job. Does not edit application data/code."""
+"""Local, resumable raw-only collection job. Does not edit application data/code.
+
+归档快照：相对路径绑定原始运行位置（corpus/<批次>/，依赖 tools/guide-pipeline 的
+sources/store/media 与 .venv），搬离 docs/ 后不可直接运行，仅供复现参考。
+"""
 import argparse
 import concurrent.futures
 import hashlib

@@ -1,5 +1,6 @@
 # xhs 每日节奏链：每轮 25 请求，clean→24h 后再跑，streak→冷却翻倍(封顶48h)
 # 修复：每轮独立时间戳目录；只统计本轮 launch 之后的事件；冻结(streak/instant-pause)与干净收工分别记账
+# 归档快照：路径绑定原始运行位置（corpus/collection/ + tools/guide-pipeline/.venv），搬离后不可直接运行
 import json
 import re
 import shutil
