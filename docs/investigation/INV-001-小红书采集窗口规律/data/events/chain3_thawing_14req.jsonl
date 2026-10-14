@@ -1,0 +1,38 @@
+{"time": "2026-10-12T22:39:12+08:00", "event": "search", "source": "xhs", "destination": "北京七彩蝶园", "keyword": "北京 七彩蝶园 遛娃"}
+{"time": "2026-10-12T22:39:21+08:00", "event": "search_results", "source": "xhs", "destination": "北京七彩蝶园", "count": 0}
+{"time": "2026-10-12T22:39:21+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "北京七彩蝶园"}
+{"time": "2026-10-12T22:39:21+08:00", "event": "search", "source": "xhs", "destination": "北京龙湾国际露营公园", "keyword": "北京 龙湾国际露营公园 遛娃"}
+{"time": "2026-10-12T22:39:36+08:00", "event": "search_results", "source": "xhs", "destination": "北京龙湾国际露营公园", "count": 0}
+{"time": "2026-10-12T22:39:36+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "北京龙湾国际露营公园"}
+{"time": "2026-10-12T22:39:36+08:00", "event": "search", "source": "xhs", "destination": "北京帐篷公园", "keyword": "北京 帐篷公园 遛娃"}
+{"time": "2026-10-12T22:39:52+08:00", "event": "search_results", "source": "xhs", "destination": "北京帐篷公园", "count": 9}
+{"time": "2026-10-12T22:39:52+08:00", "event": "detail_attempt", "source": "xhs", "id": "6a17e5f30000000035033363"}
+{"time": "2026-10-12T22:40:25+08:00", "event": "failed", "source": "xhs", "destination": "北京帐篷公园", "error": "TimeoutError"}
+{"time": "2026-10-12T22:40:25+08:00", "event": "detail_attempt", "source": "xhs", "id": "6abc6ed60000000014002b17"}
+{"time": "2026-10-12T22:40:58+08:00", "event": "failed", "source": "xhs", "destination": "北京帐篷公园", "error": "TimeoutError"}
+{"time": "2026-10-12T22:40:58+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "北京帐篷公园"}
+{"time": "2026-10-12T22:40:58+08:00", "event": "search", "source": "xhs", "destination": "亲农耕农业体验园", "keyword": "北京 亲农耕农业体验园 遛娃"}
+{"time": "2026-10-12T22:41:07+08:00", "event": "search_results", "source": "xhs", "destination": "亲农耕农业体验园", "count": 12}
+{"time": "2026-10-12T22:41:07+08:00", "event": "detail_attempt", "source": "xhs", "id": "6a8af56b00000000230134c9"}
+{"time": "2026-10-12T22:41:40+08:00", "event": "failed", "source": "xhs", "destination": "亲农耕农业体验园", "error": "TimeoutError"}
+{"time": "2026-10-12T22:41:40+08:00", "event": "detail_attempt", "source": "xhs", "id": "6ac73307000000001500f9c9"}
+{"time": "2026-10-12T22:41:43+08:00", "event": "unmatched", "source": "xhs", "destination": "亲农耕农业体验园", "id": "6ac73307000000001500f9c9"}
+{"time": "2026-10-12T22:41:43+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "亲农耕农业体验园"}
+{"time": "2026-10-12T22:41:43+08:00", "event": "search", "source": "xhs", "destination": "半壁店森林公园", "keyword": "北京 半壁店森林公园 遛娃"}
+{"time": "2026-10-12T22:41:51+08:00", "event": "search_results", "source": "xhs", "destination": "半壁店森林公园", "count": 20}
+{"time": "2026-10-12T22:41:51+08:00", "event": "detail_attempt", "source": "xhs", "id": "69fee41d0000000035030d62"}
+{"time": "2026-10-12T22:42:24+08:00", "event": "failed", "source": "xhs", "destination": "半壁店森林公园", "error": "TimeoutError"}
+{"time": "2026-10-12T22:42:24+08:00", "event": "detail_attempt", "source": "xhs", "id": "6a0079c90000000008031e57"}
+{"time": "2026-10-12T22:42:27+08:00", "event": "unmatched", "source": "xhs", "destination": "半壁店森林公园", "id": "6a0079c90000000008031e57"}
+{"time": "2026-10-12T22:42:27+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "半壁店森林公园"}
+{"time": "2026-10-12T22:42:27+08:00", "event": "search", "source": "xhs", "destination": "古崖居原始部落旅游度假区", "keyword": "北京 古崖居原始部落 亲子"}
+{"time": "2026-10-12T22:42:36+08:00", "event": "search_results", "source": "xhs", "destination": "古崖居原始部落旅游度假区", "count": 0}
+{"time": "2026-10-12T22:42:36+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "古崖居原始部落旅游度假区"}
+{"time": "2026-10-12T22:42:36+08:00", "event": "search", "source": "xhs", "destination": "菩萨山风景区", "keyword": "北京 菩萨山 亲子徒步"}
+{"time": "2026-10-12T22:42:52+08:00", "event": "search_results", "source": "xhs", "destination": "菩萨山风景区", "count": 0}
+{"time": "2026-10-12T22:42:52+08:00", "event": "destination_unfilled", "source": "xhs", "destination": "菩萨山风景区"}
+{"time": "2026-10-12T22:42:52+08:00", "event": "search", "source": "xhs", "destination": "云蒙山国家森林公园", "keyword": "北京 云蒙山森林公园 亲子徒步"}
+{"time": "2026-10-12T22:43:08+08:00", "event": "search_results", "source": "xhs", "destination": "云蒙山国家森林公园", "count": 0}
+{"time": "2026-10-12T22:43:08+08:00", "event": "blocked", "source": "xhs", "reason": "Three consecutive empty searches; conservatively paused, cause unconfirmed"}
+{"time": "2026-10-12T22:43:08+08:00", "event": "worker_done", "source": "xhs"}
+{"time": "2026-10-12T22:43:08+08:00", "event": "job_done", "source": "all"}
