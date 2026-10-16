@@ -26,4 +26,4 @@ with tempfile.TemporaryDirectory(prefix="outdoor-e2e-") as directory:
             is_admin=True,
         ))
         db.commit()
-    uvicorn.run(app, host="127.0.0.1", port=8015)
+    uvicorn.run(app, host="127.0.0.1", port=int(os.environ.get("E2E_BACKEND_PORT", 8015)))
