@@ -27,6 +27,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    is_admin = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
 
     wechat_openid = Column(String(64), unique=True, nullable=True, index=True)
@@ -194,3 +195,52 @@ class LegacyImport(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     import_id = Column(String(64), primary_key=True)
     result = Column(JSON, nullable=False)
+
+
+class PipelineJob(Base):
+    __tablename__ = "pipeline_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    type = Column(String(64), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    policy = Column(JSON, default=dict, nullable=False)
+    enabled = Column(Boolean, default=True, nullable=False)
+    next_run_at = Column(DateTime(timezone=True), nullable=True)
+    last_run_at = Column(DateTime(timezone=True), nullable=True)
+    state = Column(String(16), default="active", nullable=False)
+    cooldown_until = Column(DateTime(timezone=True), nullable=True)
+    consecutive_streaks = Column(Integer, default=0, nullable=False)
+
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    runs = relationship("PipelineRun", back_populates="job", cascade="all, delete-orphan")
+
+
+class PipelineRun(Base):
+    __tablename__ = "pipeline_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("pipeline_jobs.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    started_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    finished_at = Column(DateTime(timezone=True), nullable=True)
+    outcome = Column(String(32), nullable=True)
+    requests = Column(Integer, default=0, nullable=False)
+    saved = Column(Integer, default=0, nullable=False)
+    detail_failures = Column(Integer, default=0, nullable=False)
+    error = Column(Text, nullable=True)
+
+    job = relationship("PipelineJob", back_populates="runs")
+
+
+class PipelineEvent(Base):
+    __tablename__ = "pipeline_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ts = Column(DateTime(timezone=True), default=utcnow, nullable=False, index=True)
+    job_id = Column(Integer, ForeignKey("pipeline_jobs.id", ondelete="CASCADE"), nullable=True, index=True)
+    run_id = Column(Integer, ForeignKey("pipeline_runs.id", ondelete="CASCADE"), nullable=True, index=True)
+    source = Column(String(64), nullable=True)
+    event = Column(String(64), nullable=False)
+    payload = Column(JSON, nullable=True)

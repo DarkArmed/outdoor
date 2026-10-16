@@ -13,6 +13,7 @@ INITIAL = "20260912_initial"
 WEB_HEAD = "20260913_legacy"
 WECHAT_HEAD = "20261001_wechat_login"
 MERGED_HEAD = "20261003_merge_web_wechat"
+ADMIN_HEAD = "20261017_admin_pipeline"
 RECEIPT = {"import_id": "existing-import", "trip_ids": [17, 23]}
 
 
@@ -57,13 +58,21 @@ def assert_merged_schema(engine):
     }
     assert ("email",) in unique_columns
     assert ("wechat_openid",) in unique_columns
-    assert versions(engine) == {MERGED_HEAD}
+    assert versions(engine) == {ADMIN_HEAD}
+
+
+def assert_admin_pipeline_schema(engine):
+    inspector = sa.inspect(engine)
+    assert {"pipeline_jobs", "pipeline_runs", "pipeline_events"} <= set(inspector.get_table_names())
+    columns = {column["name"]: column for column in inspector.get_columns("users")}
+    assert columns["is_admin"]["nullable"] is False
 
 
 def test_one_head_preserves_both_published_revision_parents(migration_db):
     config, _ = migration_db
     scripts = ScriptDirectory.from_config(config)
-    assert scripts.get_heads() == [MERGED_HEAD]
+    assert scripts.get_heads() == [ADMIN_HEAD]
+    assert scripts.get_revision(ADMIN_HEAD).down_revision == MERGED_HEAD
     assert set(scripts.get_revision(MERGED_HEAD).down_revision) == {WEB_HEAD, WECHAT_HEAD}
     assert scripts.get_revision(WEB_HEAD).down_revision == INITIAL
     assert scripts.get_revision(WECHAT_HEAD).down_revision == INITIAL
@@ -73,6 +82,7 @@ def test_fresh_database_upgrade_downgrade_and_upgrade_again(migration_db):
     config, engine = migration_db
     command.upgrade(config, "head")
     assert_merged_schema(engine)
+    assert_admin_pipeline_schema(engine)
 
     command.downgrade(config, "base")
     assert sa.inspect(engine).get_table_names() == ["alembic_version"]
@@ -80,6 +90,7 @@ def test_fresh_database_upgrade_downgrade_and_upgrade_again(migration_db):
 
     command.upgrade(config, "head")
     assert_merged_schema(engine)
+    assert_admin_pipeline_schema(engine)
 
 
 @pytest.mark.parametrize("starting_head", [WEB_HEAD, WECHAT_HEAD])
@@ -113,7 +124,8 @@ def test_existing_branch_database_upgrades_without_losing_data(migration_db, sta
 
     command.upgrade(config, "head")
     assert_merged_schema(engine)
-    expected_user = {"wechat_openid": None, "nickname": None, **original_user}
+    assert_admin_pipeline_schema(engine)
+    expected_user = {"wechat_openid": None, "nickname": None, "is_admin": False, **original_user}
     assert rows(engine, "users") == [expected_user]
     assert rows(engine, "profiles") == [original_profile]
     assert rows(engine, "legacy_imports") == ([receipt] if starting_head == WEB_HEAD else [])
@@ -141,10 +153,12 @@ def test_existing_branch_database_upgrades_without_losing_data(migration_db, sta
     # Removing only the merge splits version markers, not users or receipts.
     command.downgrade(config, WEB_HEAD)
     assert versions(engine) == {WEB_HEAD, WECHAT_HEAD}
-    assert rows(engine, "users") == [merged_user]
+    downgraded_user = {key: value for key, value in merged_user.items() if key != "is_admin"}
+    assert rows(engine, "users") == [downgraded_user]
     assert rows(engine, "legacy_imports") == [receipt]
     command.upgrade(config, "head")
     assert_merged_schema(engine)
+    assert_admin_pipeline_schema(engine)
     assert rows(engine, "users") == [merged_user]
     assert rows(engine, "profiles") == [original_profile]
     assert rows(engine, "legacy_imports") == [receipt]

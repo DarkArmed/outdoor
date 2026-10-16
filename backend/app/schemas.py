@@ -29,6 +29,7 @@ class UserOut(BaseModel):
     # Registration input remains validated by EmailStr.
     email: str
     is_active: bool
+    is_admin: bool
     created_at: datetime
     nickname: str | None = None
 

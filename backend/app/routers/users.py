@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
@@ -20,7 +20,10 @@ def read_user(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    # For now users can only read themselves.
-    if current_user.id != user_id:
-        pass  # TODO: admin check
-    return current_user
+    # 仅本人或管理员可读
+    if current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
