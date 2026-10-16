@@ -68,8 +68,16 @@ outdoor/
 ## 攻略流水线（tools/guide-pipeline/）
 
 - 作用：从小红书/微博/携程等平台采集户外攻略**原文**（文字 + 图片 + 视频）到本地语料库 `corpus/`（gitignore），供后续方案多样化参考；一期只存档原文，不做标准化。
-- 状态：设计阶段。需求 PRD-006、选型 ADR-006、机制与运行方式见 `docs/tech/攻略流水线.md`。
+- 状态：**运行中**——一期采集已落地运行；调研期的本地批次脚本为历史形态，不再演进，常驻调度与预算台账由数据流水线承担（见下节）。
+- 需求 PRD-006、选型 ADR-006、机制与运行方式见 `docs/tech/攻略流水线.md`；采集节奏依据调研 INV-001（小红书采集窗口规律）。
 - 红线：语料仅个人参考、保留出处、不二次分发；cookie 与 `corpus/` 不进 git；遇反爬升级即停采该源，不对抗。
+
+## 数据流水线（backend/app/pipeline/）
+
+- 作用：攻略采集的常驻调度与预算账本——`python -m app.pipeline.worker` 独立常驻进程（compose 第三个常驻服务 `pipeline`，独立镜像 `Dockerfile.worker`），按 DB 作业表轮询调度（默认 30s tick），调用 guide-pipeline 引擎执行采集。
+- 调度语义：结局驱动重排（clean/budget_stop → 次日窗口；streak → 冷却 24h 起 ×2 封顶 48h）；请求预算以 PipelineEvent 事件台账 24h 滑动窗口计量。
+- 管理后台：web `/admin` 仅管理员可见（`User.is_admin` + `get_current_admin`），开通用 CLI `python -m app.promote_admin <email>`，无自助入口。
+- 需求 PRD-008、选型 ADR-008、机制见 `docs/tech/数据流水线.md`；三表字段契约见 `docs/tech/数据契约.md` §6.9–6.11。
 
 ## 用户配置（config/profile.json）
 

@@ -8,6 +8,8 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { MyTripsPage } from "./pages/MyTripsPage";
 import { LegacyMigration } from "./components/LegacyMigration";
+import { AdminLayout } from "./components/AdminLayout";
+import { PipelineDashboardPage } from "./pages/admin/PipelineDashboardPage";
 
 function RequireAuth() {
   const { user, loading } = useAuth();
@@ -33,6 +35,21 @@ function GuestOnly() {
   if (loading) return <p className="p-8">加载中…</p>;
   return user ? <Navigate to="/" replace /> : <Outlet />;
 }
+export function RequireAdmin() {
+  const { user, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <p className="p-8">加载中…</p>;
+  if (!user)
+    return (
+      <Navigate
+        to="/login"
+        state={{ from: location.pathname + location.search }}
+        replace
+      />
+    );
+  if (!user.is_admin) return <Navigate to="/" replace />;
+  return <Outlet />;
+}
 export default function App() {
   return (
     <Routes>
@@ -48,6 +65,11 @@ export default function App() {
           <Route path="my-trips" element={<MyTripsPage />} />
         </Route>
         <Route path="*" element={<p className="p-8">页面不存在</p>} />
+      </Route>
+      <Route element={<RequireAdmin />}>
+        <Route path="admin" element={<AdminLayout />}>
+          <Route index element={<PipelineDashboardPage />} />
+        </Route>
       </Route>
     </Routes>
   );

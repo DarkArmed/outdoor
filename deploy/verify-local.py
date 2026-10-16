@@ -2,6 +2,8 @@
 import argparse
 import json
 import secrets
+import shutil
+import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -41,12 +43,32 @@ def login(email, password):
     return request("POST", "/api/auth/login", {"username": email, "password": password}, form=True)["access_token"]
 
 
+def check_pipeline_container():
+    """pipeline worker（compose 第三常驻服务，ADR-008）：容器在运行且调度循环已启动。"""
+    docker = shutil.which("docker")
+    assert docker, "docker CLI not found: cannot verify the pipeline container"
+    names = subprocess.run(
+        [docker, "ps", "--filter", "label=com.docker.compose.service=pipeline", "--format", "{{.Names}}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    ).stdout.split()
+    assert names, "pipeline container is not running (compose up should include the pipeline service)"
+    logs = subprocess.run(
+        [docker, "logs", names[0]],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
+    )
+    output = logs.stdout + logs.stderr
+    assert "调度循环启动" in output, "pipeline logs lack the scheduler startup line (调度循环启动)"
+
+
 assert request("GET", "/api/ready")["status"] == "ready"
 assert request("GET", "/api/health")["status"] == "ok"
 for path in ("/api/not-found", "/assets/not-found.js", "/.env", "/docs", "/openapi.json"):
     request("GET", path, expected=404)
 assert "户外大冒险" in request("GET", "/plan/2026-10-04_container-demo")
 request("GET", "/api/plans", expected=401)
+# 管理员端点未登录 401（登录但非管理员为 403，见 get_current_admin）
+request("GET", "/api/admin/pipeline/overview", expected=401)
+check_pipeline_container()
 
 if args.mode == "exercise":
     suffix = secrets.token_hex(6)

@@ -10,7 +10,7 @@ from app.readiness import readiness
 from app.static_site import attach_static_site
 from app.database import Base, engine, get_db
 from app.models import BadgeUnlock, User
-from app.routers import legacy, auth, milestones, plans, profile, routes, state, trips, users
+from app.routers import legacy, admin_pipeline, auth, milestones, plans, profile, routes, state, trips, users
 from app.schemas import BadgeUnlockOut, UserOut
 
 settings = get_settings()
@@ -48,6 +48,7 @@ app.include_router(trips.router)
 app.include_router(routes.router)
 app.include_router(milestones.router)
 app.include_router(state.router)
+app.include_router(admin_pipeline.router)
 
 
 app.add_api_route("/api/ready", readiness, methods=["GET"], include_in_schema=False)

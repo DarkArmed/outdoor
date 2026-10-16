@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
+// 端口可用环境变量覆盖：本机 8015 落在 Windows 保留段（7967–8066）时换个口
+const backendPort = process.env.E2E_BACKEND_PORT ?? '8015'
+const frontendPort = process.env.E2E_FRONTEND_PORT ?? '5175'
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://127.0.0.1:5175',
+    baseURL: `http://127.0.0.1:${frontendPort}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
@@ -24,12 +28,12 @@ export default defineConfig({
   ],
   webServer: [{
     command: 'python ../backend/tests/e2e_server.py',
-    url: 'http://127.0.0.1:8015/openapi.json',
+    url: `http://127.0.0.1:${backendPort}/openapi.json`,
     reuseExistingServer: false,
   }, {
-    env: { VITE_API_PROXY_TARGET: 'http://127.0.0.1:8015' },
-    command: 'npm run dev -- --host 127.0.0.1 --port 5175 --strictPort',
-    url: 'http://127.0.0.1:5175',
+    env: { VITE_API_PROXY_TARGET: `http://127.0.0.1:${backendPort}` },
+    command: `npm run dev -- --host 127.0.0.1 --port ${frontendPort} --strictPort`,
+    url: `http://127.0.0.1:${frontendPort}`,
     reuseExistingServer: false,
   }],
 })
