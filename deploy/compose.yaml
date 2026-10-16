@@ -77,6 +77,45 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  pipeline:
+    image: outdoor-local-pipeline:${IMAGE_TAG:-dev}
+    build:
+      context: ..
+      dockerfile: Dockerfile.worker
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql://outdoor:${POSTGRES_PASSWORD:?Run prepare-local.py first}@db:5432/outdoor
+      SECRET_KEY: ${SECRET_KEY:?Run prepare-local.py first}
+      PIPELINE_TOOLS_DIR: /app/tools/guide-pipeline
+      PIPELINE_CORPUS_ROOT: /app/corpus
+      DEBUG: "false"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    volumes:
+      # 语料库（gitignore 本地数据，运行时挂载而非 COPY 进镜像）；宿主机没有 corpus/
+      # 时 compose 会自动创建空目录；原生 Linux 下需保证容器内 pwuser（UID 1000）可写
+      - ../corpus:/app/corpus
+      # 平台登录 cookie（gitignore，含登录凭据，勿提交勿外发）：读写挂载，扫码登录后落盘持久化
+      - ../tools/guide-pipeline/.cookies:/app/tools/guide-pipeline/.cookies
+    networks:
+      - database
+    healthcheck:
+      # worker 无 HTTP 端口：确认 PID 1 是调度进程本身
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0 if 'app.pipeline.worker' in open('/proc/1/cmdline').read() else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   demo:
     <<: *app
     profiles: ["tools"]
