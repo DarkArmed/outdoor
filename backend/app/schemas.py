@@ -217,3 +217,68 @@ class BadgeUnlockOut(BaseModel):
     unlocked_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ---------- Admin Pipeline ----------
+
+class PipelineJobOut(BaseModel):
+    id: int
+    type: str
+    name: str
+    state: str
+    enabled: bool
+    next_run_at: datetime | None
+    last_run_at: datetime | None
+    consecutive_streaks: int
+    cooldown_until: datetime | None
+    policy: dict[str, Any]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PipelineRunOut(BaseModel):
+    id: int
+    job_id: int
+    started_at: datetime
+    finished_at: datetime | None
+    outcome: str | None
+    requests: int
+    saved: int
+    detail_failures: int
+    error: str | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PipelineEventOut(BaseModel):
+    id: int
+    ts: datetime
+    job_id: int | None
+    run_id: int | None
+    source: str | None
+    event: str
+    payload: dict[str, Any] | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PipelineSourceBudgetOut(BaseModel):
+    source: str
+    used_24h: int
+    limit: int | None
+    limit_source: str  # engine_config / job_policy
+    in_cooldown: bool
+
+
+class PipelineOverviewOut(BaseModel):
+    jobs: list[PipelineJobOut]
+    budgets: list[PipelineSourceBudgetOut]
+    cooldown_sources: list[str]
+
+
+class PipelineJobUpdate(BaseModel):
+    name: str | None = None
+    session_budget: int | None = None
+    run_at: str | None = None
+    interval: str | None = None
+    reschedule: bool = False
