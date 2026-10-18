@@ -58,6 +58,17 @@ def check_pipeline_container():
     )
     output = logs.stdout + logs.stderr
     assert "调度循环启动" in output, "pipeline logs lack the scheduler startup line (调度循环启动)"
+    # 出网探针：采集必须能访问外网（database 网络是 internal，靠 entry 网络出网）
+    probe = subprocess.run(
+        [
+            docker, "exec", names[0], "python", "-c",
+            "import urllib.request; print(urllib.request.urlopen('https://www.baidu.com', timeout=30).status)",
+        ],
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60,
+    )
+    assert probe.returncode == 0 and "200" in probe.stdout, (
+        f"pipeline container has no internet egress: {probe.stderr.strip()}"
+    )
 
 
 assert request("GET", "/api/ready")["status"] == "ready"

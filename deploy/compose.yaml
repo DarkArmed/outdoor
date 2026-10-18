@@ -101,6 +101,9 @@ services:
       # 平台登录 cookie（gitignore，含登录凭据，勿提交勿外发）：读写挂载，扫码登录后落盘持久化
       - ../tools/guide-pipeline/.cookies:/app/tools/guide-pipeline/.cookies
     networks:
+      # 采集需要出网访问小红书/微博/携程等平台：database 是 internal 网络（无出网路由），
+      # 必须同时挂 entry 网络，否则采集请求必失败
+      - entry
       - database
     healthcheck:
       # worker 无 HTTP 端口：确认 PID 1 是调度进程本身
