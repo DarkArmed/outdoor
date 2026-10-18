@@ -2,6 +2,7 @@
 
 import itertools
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -330,7 +331,8 @@ def test_patch_reschedule_recomputes_next_run(client, admin, db_session):
     body = r.json()
     assert aware(body["next_run_at"]) != old_next
     assert aware(body["next_run_at"]) > datetime.now(timezone.utc)
-    assert aware(body["next_run_at"]).astimezone().strftime("%H:%M") == "07:00"
+    # 窗口按调度时区（默认 Asia/Shanghai）解释，不跟随系统时区
+    assert aware(body["next_run_at"]).astimezone(ZoneInfo("Asia/Shanghai")).strftime("%H:%M") == "07:00"
 
 
 @pytest.mark.parametrize(

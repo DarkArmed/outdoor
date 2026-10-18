@@ -24,6 +24,11 @@ _names = itertools.count(1)
 POLICY = {"sources": ["xhs"], "session_budget": 25, "run_at": "08:30", "keywords": ["白河湾"]}
 
 
+def fresh() -> datetime:
+    """预算窗口相关事件的时间戳必须贴近真实当前时间（stage 内部按真实 now 计量滑窗）。"""
+    return datetime.now(timezone.utc)
+
+
 def aware(dt):
     return dt if dt is None or dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
@@ -147,7 +152,7 @@ def test_outcome_frozen_from_engine(monkeypatch):
 def test_outcome_frozen_from_db_ledger(monkeypatch):
     """DB 台账 24h 内已有 blocked → 不启动引擎，直接 frozen。"""
     with TestSession() as db:
-        add_event(db, "xhs", "blocked", NOW - timedelta(hours=2), reason="历史风控")
+        add_event(db, "xhs", "blocked", fresh() - timedelta(hours=2), reason="历史风控")
     job, run, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})])
     assert calls == []  # 引擎未被调用
     assert run["outcome"] == "frozen"
@@ -197,11 +202,21 @@ def test_db_budget_exhausted_skips_engine(monkeypatch):
     """DB 台账 24h 内已达 session_budget → 预检拦下，结局 budget_stop。"""
     with TestSession() as db:
         for i in range(25):
-            add_event(db, "xhs", "search", NOW - timedelta(hours=1), keyword=f"k{i}")
+            add_event(db, "xhs", "search", fresh() - timedelta(hours=1), keyword=f"k{i}")
     job, run, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})])
     assert calls == []
     assert run["outcome"] == "budget_stop"
     assert job["state"] == "active"
+
+
+def test_engine_receives_remaining_budget(monkeypatch):
+    """窗口内已用 20 / 预算 25 → 引擎只收到剩余额度 5（缺陷 2：不再整额放行）。"""
+    with TestSession() as db:
+        for i in range(20):
+            add_event(db, "xhs", "search", fresh() - timedelta(hours=1), keyword=f"k{i}")
+    job, run, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})])
+    assert calls[0]["session_budget"] == 5
+    assert run["outcome"] == "clean"
 
 
 # ---------- 详情连续失败提前收工 ----------

@@ -1,4 +1,4 @@
-"""worker 默认作业幂等 upsert 测试。"""
+"""worker 默认作业幂等 upsert 测试：按源独立作业 + 旧合并作业停用。"""
 
 from datetime import datetime, timezone
 
@@ -14,25 +14,51 @@ TestSession = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 NOW = datetime(2026, 10, 17, 10, 0, tzinfo=timezone.utc)
 
+EXPECTED = {
+    "collect.xhs_daily": (["xhs"], 25, "08:30"),
+    "collect.weibo_daily": (["weibo"], 150, "09:00"),
+    "collect.ctrip_daily": (["ctrip"], 150, "09:30"),
+    "collect.visitbeijing_daily": (["visitbeijing"], 150, "10:00"),
+}
 
-def test_default_jobs_created_with_expected_policy():
+
+def test_default_jobs_created_per_source():
+    """默认作业按源独立：单源 blocked 冷却不拖垮其他源（缺陷 6）。"""
     with TestSession() as db:
         created = ensure_default_jobs(db, now=NOW)
-        assert {j.name for j in created} == {"collect.xhs_daily", "collect.others_daily"}
+        assert {j.name for j in created} == set(EXPECTED)
+        assert len(DEFAULT_JOBS) == 4
 
-        xhs = db.query(PipelineJob).filter(PipelineJob.name == "collect.xhs_daily").one()
-        assert xhs.type == "collect"
-        assert xhs.policy["sources"] == ["xhs"]
-        assert xhs.policy["session_budget"] == 25
-        assert xhs.policy["run_at"] == "08:30"
-        assert xhs.enabled is True
-        assert xhs.state == "active"
-        assert xhs.next_run_at is not None
+        for name, (sources, budget, run_at) in EXPECTED.items():
+            job = db.query(PipelineJob).filter(PipelineJob.name == name).one()
+            assert job.type == "collect"
+            assert job.policy["sources"] == sources
+            assert job.policy["session_budget"] == budget
+            assert job.policy["run_at"] == run_at
+            assert job.enabled is True
+            assert job.state == "active"
+            assert job.next_run_at is not None
 
-        others = db.query(PipelineJob).filter(PipelineJob.name == "collect.others_daily").one()
-        assert others.policy["sources"] == ["weibo", "ctrip", "visitbeijing"]
-        assert others.policy["session_budget"] == 150
-        assert others.policy["run_at"] == "09:30"
+
+def test_legacy_others_daily_disabled_not_deleted():
+    """已存在的旧合并作业 collect.others_daily 被停用（保留行与历史运行记录）。"""
+    with TestSession() as db:
+        legacy = PipelineJob(
+            type="collect",
+            name="collect.others_daily",
+            policy={"sources": ["weibo", "ctrip", "visitbeijing"], "session_budget": 150, "run_at": "09:30"},
+            enabled=True,
+        )
+        db.add(legacy)
+        db.commit()
+
+        ensure_default_jobs(db, now=NOW)
+
+        legacy = db.query(PipelineJob).filter(PipelineJob.name == "collect.others_daily").one()
+        assert legacy.enabled is False  # 停用不删行
+        assert legacy.policy["sources"] == ["weibo", "ctrip", "visitbeijing"]  # 原参数不动
+        # 新的按源独立作业照常创建
+        assert db.query(PipelineJob).filter(PipelineJob.name == "collect.weibo_daily").count() == 1
 
 
 def test_ensure_default_jobs_idempotent_and_no_overwrite():

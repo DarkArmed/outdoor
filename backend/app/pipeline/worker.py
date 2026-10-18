@@ -18,8 +18,9 @@ from app.pipeline.scheduler import Scheduler
 
 logger = logging.getLogger(__name__)
 
-# 默认作业（INV-001 节奏内置）：xhs 每 24h 一轮、08:30、会话预算 25；
-# 其余源风控宽松，预算参考引擎 config 的 daily_cap 取 150，错开到 09:30
+# 默认作业（INV-001 节奏内置）：按源独立——多源捆一个作业时任一源 blocked 会整组冷却。
+# xhs 每 24h 一轮、08:30、会话预算 25；其余源风控宽松，预算参考引擎 config 的
+# daily_cap 取 150，run_at 错开避免同一窗口排队（执行器串行，见 scheduler）
 DEFAULT_JOBS = [
     {
         "type": "collect",
@@ -28,10 +29,23 @@ DEFAULT_JOBS = [
     },
     {
         "type": "collect",
-        "name": "collect.others_daily",
-        "policy": {"sources": ["weibo", "ctrip", "visitbeijing"], "session_budget": 150, "interval": "24h", "run_at": "09:30"},
+        "name": "collect.weibo_daily",
+        "policy": {"sources": ["weibo"], "session_budget": 150, "interval": "24h", "run_at": "09:00"},
+    },
+    {
+        "type": "collect",
+        "name": "collect.ctrip_daily",
+        "policy": {"sources": ["ctrip"], "session_budget": 150, "interval": "24h", "run_at": "09:30"},
+    },
+    {
+        "type": "collect",
+        "name": "collect.visitbeijing_daily",
+        "policy": {"sources": ["visitbeijing"], "session_budget": 150, "interval": "24h", "run_at": "10:00"},
     },
 ]
+
+# 已被按源独立作业取代的旧合并作业：启动时停用（enabled=False），不删行保留历史与运行记录
+LEGACY_JOB_NAMES = ["collect.others_daily"]
 
 
 def ensure_default_jobs(db: Session, now: datetime | None = None) -> list[PipelineJob]:
@@ -50,6 +64,12 @@ def ensure_default_jobs(db: Session, now: datetime | None = None) -> list[Pipeli
         )
         db.add(job)
         created.append(job)
+    for name in LEGACY_JOB_NAMES:
+        legacy = db.query(PipelineJob).filter(PipelineJob.name == name).first()
+        if legacy is not None and legacy.enabled:
+            # 旧合并作业已拆分为按源独立作业：停用防止重复采集同一批源（行保留不删）
+            legacy.enabled = False
+            logger.info("停用旧合并作业: %s（已拆分为按源独立作业）", name)
     db.commit()
     return created
 

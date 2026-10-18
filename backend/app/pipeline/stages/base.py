@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import abc
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
@@ -22,19 +23,26 @@ class StageContext:
     db: Session
     job: PipelineJob
     run: PipelineRun
+    _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def emit(self, event: str, source: str | None = None, ts: datetime | None = None, **payload: Any) -> PipelineEvent:
-        # ts 传 None 时用模型默认 utcnow
-        row = PipelineEvent(
-            ts=ts,
-            job_id=self.job.id,
-            run_id=self.run.id,
-            source=source,
-            event=event,
-            payload=payload or None,
-        )
-        self.db.add(row)
-        return row
+        """写一行 PipelineEvent 并立即独立提交：dashboard 运行中即可见，进程中断不丢已发事件。
+
+        emit 会在执行引擎的线程里被调用（SQLAlchemy session 非线程安全），加锁保护；
+        事件量级小（每轮几十条），逐条 commit 开销可接受。ts 传 None 时用模型默认 utcnow。
+        """
+        with self._lock:
+            row = PipelineEvent(
+                ts=ts,
+                job_id=self.job.id,
+                run_id=self.run.id,
+                source=source,
+                event=event,
+                payload=payload or None,
+            )
+            self.db.add(row)
+            self.db.commit()
+            return row
 
 
 @dataclass

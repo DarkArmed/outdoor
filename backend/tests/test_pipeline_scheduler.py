@@ -1,13 +1,16 @@
-"""调度循环测试：到期执行 / paused 跳过 / cooldown 自动恢复 / 结局重排 / 防重入。"""
+"""调度循环测试：到期执行 / paused 跳过 / cooldown 自动恢复 / 结局重排 / 防重入 /
+运行中可见性（run 即时落库）/ collect 类作业串行执行。"""
 
 import itertools
+import threading
+import time
 from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.models import PipelineJob, PipelineRun
+from app.models import PipelineEvent, PipelineJob, PipelineRun
 from app.pipeline.scheduler import InlineExecutor, Scheduler
 from app.pipeline.stages import Stage, StageOutcome, register_stage
 
@@ -40,10 +43,10 @@ def _reset_calls():
     FakeStage.calls = []
 
 
-def make_job(db, *, fake="clean", state="active", enabled=True, next_run_at=None,
+def make_job(db, *, fake="clean", type_="fake", state="active", enabled=True, next_run_at=None,
              cooldown_until=None, streaks=0, run_at="08:30"):
     job = PipelineJob(
-        type="fake",
+        type=type_,
         name=f"fake.job_{next(_names)}",
         policy={"fake": fake, "run_at": run_at},
         enabled=enabled,
@@ -169,3 +172,76 @@ def test_no_reentry_while_running():
     scheduler._running.add(job.id)  # 模拟上一轮还在跑
     assert scheduler.tick(now=NOW) == []
     assert FakeStage.calls == []
+
+
+# ---------- 缺陷 3：运行中 dashboard 可见（run 即时落库 + 事件逐条提交） ----------
+
+
+class MidRunProbeStage(Stage):
+    """运行中途从另一连接检查：run 已落库（finished_at=NULL 即运行中）且已发事件可见。"""
+
+    seen: dict = {}
+
+    def run(self, ctx):
+        ctx.emit("search", source="xhs", keyword="k")
+        with TestSession() as other:  # 另一连接视角（dashboard 查询路径）
+            run = other.query(PipelineRun).filter(PipelineRun.id == ctx.run.id).first()
+            events = other.query(PipelineEvent).filter(PipelineEvent.run_id == ctx.run.id).all()
+            MidRunProbeStage.seen = {
+                "run_found": run is not None,
+                "finished_at": run.finished_at if run else "missing",
+                "events": [e.event for e in events],
+            }
+        ctx.emit("saved", source="xhs", id="a1")
+        return StageOutcome(outcome="clean", requests=1, saved=1)
+
+
+register_stage("fake_probe", MidRunProbeStage)
+
+
+def test_run_and_events_visible_mid_run():
+    with TestSession() as db:
+        make_job(db, type_="fake_probe")
+    make_scheduler().tick(now=NOW)
+    assert MidRunProbeStage.seen["run_found"] is True
+    assert MidRunProbeStage.seen["finished_at"] is None  # 运行中 finished_at 为 NULL
+    assert MidRunProbeStage.seen["events"] == ["search"]  # 已发事件运行中即可见
+
+
+# ---------- 缺陷 6：collect 类作业串行执行（默认线程池 max_workers=1） ----------
+
+
+class SlowStage(Stage):
+    """记录并发度：同时活跃的执行数峰值。"""
+
+    lock = threading.Lock()
+    active = 0
+    max_active = 0
+
+    def run(self, ctx):
+        with SlowStage.lock:
+            SlowStage.active += 1
+            SlowStage.max_active = max(SlowStage.max_active, SlowStage.active)
+        time.sleep(0.05)
+        with SlowStage.lock:
+            SlowStage.active -= 1
+        return StageOutcome(outcome="clean")
+
+
+register_stage("fake_slow", SlowStage)
+
+
+def test_due_jobs_run_serially_with_default_executor():
+    """同一 tick 多个到期作业不并发执行（默认执行器 max_workers=1，保护语料库写入）。"""
+    SlowStage.active = SlowStage.max_active = 0
+    scheduler = Scheduler(session_factory=TestSession, tick_seconds=1)  # 默认线程池
+    try:
+        with TestSession() as db:
+            for _ in range(3):
+                make_job(db, type_="fake_slow")
+        submitted = scheduler.tick(now=NOW)
+        assert len(submitted) == 3
+        scheduler.wait_idle(timeout=10)
+        assert SlowStage.max_active == 1
+    finally:
+        scheduler._executor.shutdown(wait=True)

@@ -8,6 +8,9 @@
 
 单实例部署（PRD 明确不做多 worker）。同一 job 不重入：内存锁（self._running）+
 执行前把 next_run_at 先推到下一个窗口双保险，跑完由 policies 按结局重算。
+
+线程池 max_workers=1：collect 作业写语料库（corpus/）与 events.jsonl 非并发安全，
+单实例作业量小（每天几轮），串行足够且天然避免多源并发写。
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ class Scheduler:
     def __init__(self, session_factory=None, tick_seconds: int | None = None, executor=None):
         self._session_factory = session_factory or SessionLocal
         self.tick_seconds = tick_seconds if tick_seconds is not None else get_settings().pipeline_tick_seconds
-        self._executor = executor or ThreadPoolExecutor(max_workers=2, thread_name_prefix="pipeline")
+        self._executor = executor or ThreadPoolExecutor(max_workers=1, thread_name_prefix="pipeline")
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._running: set[int] = set()
@@ -70,7 +73,7 @@ class Scheduler:
             for job in cooled:
                 job.state = "active"
                 job.cooldown_until = None
-                job.next_run_at = policies.next_daily(now, policies.run_at_of(job.policy))
+                job.next_run_at = policies.next_for_policy(now, job.policy)
                 logger.info("作业冷却结束恢复 active: %s", job.name)
 
             due = (
@@ -88,8 +91,8 @@ class Scheduler:
                     if job.id in self._running:
                         continue
                     self._running.add(job.id)
-                # 先把 next_run_at 推到下一个窗口防重入；跑完由 policies 按结局覆盖
-                job.next_run_at = policies.next_daily(now, policies.run_at_of(job.policy))
+                # 先把 next_run_at 推到下一次防重入；跑完由 policies 按结局覆盖
+                job.next_run_at = policies.next_for_policy(now, job.policy)
                 submitted.append(job.id)
             db.commit()
         # commit 之后再提交线程池，保证 worker 线程读到的是已落库状态
@@ -106,17 +109,16 @@ class Scheduler:
                     return
                 run = PipelineRun(job_id=job.id)
                 db.add(run)
-                db.flush()  # 先拿到 run.id 供事件关联
+                # run 立即落库：finished_at=NULL 即「运行中」，dashboard 可见、进程中断不丢账本
+                db.commit()
                 ctx = StageContext(db=db, job=job, run=run)
                 try:
                     stage = get_stage(job.type)()
                     outcome = stage.run(ctx)
                 except Exception as exc:
                     logger.exception("作业执行异常: %s", job.name)
+                    # 只回滚未提交部分；run 与已提交的事件台账保留（事件在 emit 时已逐条提交）
                     db.rollback()
-                    run = PipelineRun(job_id=job.id)
-                    db.add(run)
-                    db.flush()
                     outcome = StageOutcome(outcome="error", error=f"{type(exc).__name__}: {exc}")
 
                 finished = datetime.now(timezone.utc)
@@ -130,7 +132,7 @@ class Scheduler:
                 decision = policies.next_schedule(
                     outcome.outcome,
                     now=finished,
-                    run_at=policies.run_at_of(job.policy),
+                    policy=job.policy,
                     consecutive_streaks=job.consecutive_streaks,
                     cooldown_until=policies.as_utc(job.cooldown_until) if job.cooldown_until else None,
                 )

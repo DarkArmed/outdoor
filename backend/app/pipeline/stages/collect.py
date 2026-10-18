@@ -1,8 +1,8 @@
 """collect 阶段：调 guide-pipeline 引擎采集语料，事件双写（events.jsonl + DB）。
 
 INV-001 操作规则在本阶段的落点：
-  - 会话预算：job.policy.session_budget 覆盖引擎默认值；除引擎自身计量外，
-    本阶段先做 DB 侧预检（PipelineEvent 24h 滑动窗口求和，ADR-008 决策 5 的事件级台账）
+  - 会话预算：DB 账本（PipelineEvent 24h 滑动窗口求和，ADR-008 决策 5）为准计量，
+    只把剩余额度（session_budget − 窗口内已用）交给引擎；引擎按自然日计量作兜底
   - 当日 blocked 拒跑：DB 台账 24h 内该源已有 blocked 记录 → 不启动引擎，结局 frozen
   - 队列排序：关键词按历史尝试次数（PipelineEvent event='search' 计数）升序，尝试少的优先
   - 详情失败率上升提前收工：同一源连续 3 次详情 failed → 主动中断本轮。
@@ -138,11 +138,15 @@ class CollectStage(Stage):
                 # DB 台账拒跑（与引擎 source_paused_for_today 同语义，事件名保持一致便于归类）
                 emit("stopped", source, reason="source_paused_for_today")
                 continue
-            if budget_used_24h(ctx.db, source, now) >= session_budget:
+            # 交给引擎的是剩余额度而非完整预算：窗口内已用 20 / 预算 25 时本轮只再放行 5。
+            # 口径差异说明：DB 账本按 24h 滑动窗口计量，引擎按自然日计量当日 prior 事件；
+            # 以 DB 账本为准（ADR-008 决策 5），引擎的自然日计量只会更早停（更保守），不会突破
+            remaining = session_budget - budget_used_24h(ctx.db, source, now)
+            if remaining <= 0:
                 emit("stopped", source, reason="budget_stop")
                 continue
             try:
-                self._run_engine(ctx, source, keywords, session_budget, emit)
+                self._run_engine(ctx, source, keywords, remaining, emit)
             except _EarlyStop:
                 emit("stopped", source, reason="detail_failure_stop")
             except Exception as exc:  # 引擎异常：记 error，继续其余源
