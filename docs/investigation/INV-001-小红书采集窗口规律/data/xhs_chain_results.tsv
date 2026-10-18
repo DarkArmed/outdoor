@@ -1,0 +1,18 @@
+round	launch	rest_h	requests	saved	outcome
+expand	10-08 01:02	24.8	98	23	streak
+retry	10-09 00:10	22.9	32	1	streak
+手动探测	10-09 00:44	0.5	3	0	manual_clean
+slow1	10-09 08:43	7.9	82	15	streak
+slow2	10-09 09:30	0.6	18	0	streak
+b1	10-11 23:06	61.5	50	12	budget_stop
+b2	10-11 23:14	0.02	42	7	streak
+b3	10-11 23:21	0.02	3	0	streak
+b4	10-12 08:30	9.1	43	2	streak
+chain1	10-12 10:37	2.0	3	0	streak
+chain2	10-12 14:38	4.0	3	0	streak
+chain3	10-12 22:39	8.0	14	0	streak
+daily-10-13	10-13 08:31	9.8	25	1	budget_stop
+daily-10-14	10-14 08:35	24.0	25	0	budget_stop
+daily-10-15	10-15 08:31	23.9	25	4	budget_stop
+daily-10-16	10-16 08:35	24.0	25	2	budget_stop
+daily-10-17	10-17 08:38	24.0	25	1	budget_stop
