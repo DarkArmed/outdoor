@@ -216,15 +216,16 @@ def update_job(
         job.policy = policy
 
     if payload.reschedule:
-        # 显式 reschedule=true 才按新 run_at 重排 next_run_at；cooldown 中的作业
-        # 排到冷却结束后的下一个窗口（不提前解除风控冷却）
+        # 显式 reschedule=true 才按新参数重排 next_run_at；与 worker 结局重排共用同一
+        # 策略函数（run_at 窗口 / interval 最小间隔 / 两者取较晚），保证 API 与 worker
+        # 计算完全一致；cooldown 中的作业以冷却结束时间为基准（不提前解除风控冷却）
         now = datetime.now(timezone.utc)
         base = now
         if job.state == "cooldown" and job.cooldown_until:
             until = policies.as_utc(job.cooldown_until)
             if until > now:
                 base = until
-        job.next_run_at = policies.next_daily(base, policies.run_at_of(job.policy))
+        job.next_run_at = policies.next_for_policy(base, job.policy)
 
     db.commit()
     db.refresh(job)

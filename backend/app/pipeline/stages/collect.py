@@ -1,8 +1,8 @@
 """collect 阶段：调 guide-pipeline 引擎采集语料，事件双写（events.jsonl + DB）。
 
 INV-001 操作规则在本阶段的落点：
-  - 会话预算：DB 账本（PipelineEvent 24h 滑动窗口求和，ADR-008 决策 5）为准计量，
-    只把剩余额度（session_budget − 窗口内已用）交给引擎；引擎按自然日计量作兜底
+  - 会话预算：限额权威是 DB 账本（PipelineEvent 24h 滑动窗口求和，ADR-008 决策 5）；
+    传给引擎的是换算后的当日上限（引擎当日已计数 + 本轮允许新增），避免双层计量重复扣减
   - 当日 blocked 拒跑：DB 台账 24h 内该源已有 blocked 记录 → 不启动引擎，结局 frozen
   - 队列排序：关键词按历史尝试次数（PipelineEvent event='search' 计数）升序，尝试少的优先
   - 详情失败率上升提前收工：同一源连续 3 次详情 failed → 主动中断本轮。
@@ -138,15 +138,17 @@ class CollectStage(Stage):
                 # DB 台账拒跑（与引擎 source_paused_for_today 同语义，事件名保持一致便于归类）
                 emit("stopped", source, reason="source_paused_for_today")
                 continue
-            # 交给引擎的是剩余额度而非完整预算：窗口内已用 20 / 预算 25 时本轮只再放行 5。
-            # 口径差异说明：DB 账本按 24h 滑动窗口计量，引擎按自然日计量当日 prior 事件；
-            # 以 DB 账本为准（ADR-008 决策 5），引擎的自然日计量只会更早停（更保守），不会突破
+            # 双层计量口径（限额权威是 DB 账本 24h 滑窗，ADR-008 决策 5；引擎按 events.jsonl
+            # 自然日计量）：直接传剩余额度会被引擎当日已计数重复扣减（DB 已用 20 → 剩余 5，
+            # 但引擎当日已计 20 → 上限 5 立即耗尽，实际新增 0）。故换算为引擎口径上限：
+            # 引擎当日已计数 + 本轮允许新增（跨日时引擎计数为 0，自然等价剩余额度）。
             remaining = session_budget - budget_used_24h(ctx.db, source, now)
             if remaining <= 0:
                 emit("stopped", source, reason="budget_stop")
                 continue
+            engine_limit = self._engine_today_used(ctx, source) + remaining
             try:
-                self._run_engine(ctx, source, keywords, remaining, emit)
+                self._run_engine(ctx, source, keywords, engine_limit, emit)
             except _EarlyStop:
                 emit("stopped", source, reason="detail_failure_stop")
             except Exception as exc:  # 引擎异常：记 error，继续其余源
@@ -188,6 +190,40 @@ class CollectStage(Stage):
             logger.exception("读取 guide-pipeline config 失败")
             return []
 
+    def _load_engine_module(self):
+        """按文件加载 guide-pipeline 引擎（非 pip 包；模块级会自行把 BASE_DIR 插进 sys.path）。
+
+        pipeline_corpus_root 配置经 GUIDE_PIPELINE_CORPUS_ROOT 环境变量透传（引擎自身读取，
+        优先级最高），保证 _engine_today_used 与实际采集读同一个语料库。
+        """
+        tools_dir = guide_pipeline_dir()
+        spec = importlib.util.spec_from_file_location("guide_pipeline_main", tools_dir / "pipeline.py")
+        if spec is None or spec.loader is None:
+            raise RuntimeError(f"无法加载采集引擎: {tools_dir / 'pipeline.py'}")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        settings = get_settings()
+        if settings.pipeline_corpus_root:
+            os.environ["GUIDE_PIPELINE_CORPUS_ROOT"] = settings.pipeline_corpus_root
+        return mod
+
+    def _engine_today_used(self, ctx: StageContext, source: str) -> int:
+        """引擎（events.jsonl）当日已计数的预算事件数，供双层计量换算（见 run 内注释）。
+
+        读不到按 0 处理：此时传给引擎的上限 = 本轮允许新增，引擎自身的当日计量会
+        照常兜底（只可能更保守，不会突破 DB 账本放行的额度）。
+        """
+        try:
+            mod = self._load_engine_module()
+            config = mod.load_config()
+            corpus_root = mod.resolve_corpus_root(config)
+            events = mod.load_today_events(corpus_root / "collection")
+            # session_used 在 budget 模块命名空间（pipeline.py 未转口）
+            return sys.modules["budget"].session_used(events, source)
+        except Exception:
+            logger.exception("读取引擎当日预算计数失败，按 0 处理: %s", source)
+            return 0
+
     def _run_engine(
         self,
         ctx: StageContext,
@@ -198,21 +234,11 @@ class CollectStage(Stage):
     ) -> None:
         """真实引擎调用（测试 monkeypatch 此方法）。进程内加载 pipeline.py 并跑一个源。
 
-        通过包装引擎 EventBus 挂 DB sink（保留默认 JsonlSink），用 job.policy 的
-        session_budget 覆盖引擎 config 值；关键词经 --keyword 透传（引擎保持 CLI 顺序，
-        即本阶段已排好的尝试次数升序）。
+        通过包装引擎 EventBus 挂 DB sink（保留默认 JsonlSink）；session_budget 是引擎口径
+        上限值（引擎当日已计数 + 本轮允许新增，由 run 换算），覆盖引擎 config 值；
+        关键词经 --keyword 透传（引擎保持 CLI 顺序，即本阶段已排好的尝试次数升序）。
         """
-        tools_dir = guide_pipeline_dir()
-        spec = importlib.util.spec_from_file_location("guide_pipeline_main", tools_dir / "pipeline.py")
-        if spec is None or spec.loader is None:
-            raise RuntimeError(f"无法加载采集引擎: {tools_dir / 'pipeline.py'}")
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-
-        settings = get_settings()
-        if settings.pipeline_corpus_root:
-            # 引擎自身读 GUIDE_PIPELINE_CORPUS_ROOT（优先级最高），直接借道
-            os.environ["GUIDE_PIPELINE_CORPUS_ROOT"] = settings.pipeline_corpus_root
+        mod = self._load_engine_module()
 
         config = mod.load_config()
         config["session_budget"] = session_budget

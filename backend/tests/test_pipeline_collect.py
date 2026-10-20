@@ -54,8 +54,9 @@ def add_event(db, source, event, ts, **payload):
     db.commit()
 
 
-def fake_engine(monkeypatch, script, calls):
-    """script: [(event, data)] 依次经 emit 回放；emit 抛 _EarlyStop 时中断（与真实引擎一致）。"""
+def fake_engine(monkeypatch, script, calls, engine_used=0):
+    """script: [(event, data)] 依次经 emit 回放；emit 抛 _EarlyStop 时中断（与真实引擎一致）。
+    engine_used: 引擎当日已计数（桩掉 _engine_today_used，避免测试读真实语料库）。"""
 
     def _run(self, ctx, source, keywords, session_budget, emit):
         calls.append({"source": source, "keywords": list(keywords), "session_budget": session_budget})
@@ -63,12 +64,13 @@ def fake_engine(monkeypatch, script, calls):
             emit(event, source, **data)
 
     monkeypatch.setattr(CollectStage, "_run_engine", _run)
+    monkeypatch.setattr(CollectStage, "_engine_today_used", lambda self, ctx, source: engine_used)
 
 
-def run_job(monkeypatch, script, policy=None, **job_kw):
+def run_job(monkeypatch, script, policy=None, engine_used=0, **job_kw):
     """经调度器完整跑一个 collect 作业，返回 (job, run, engine_calls)。"""
     calls = []
-    fake_engine(monkeypatch, script, calls)
+    fake_engine(monkeypatch, script, calls, engine_used=engine_used)
     with TestSession() as db:
         job = make_job(db, policy=policy, **job_kw)
     Scheduler(session_factory=TestSession, tick_seconds=1, executor=InlineExecutor()).tick(now=NOW)
@@ -210,13 +212,25 @@ def test_db_budget_exhausted_skips_engine(monkeypatch):
 
 
 def test_engine_receives_remaining_budget(monkeypatch):
-    """窗口内已用 20 / 预算 25 → 引擎只收到剩余额度 5（缺陷 2：不再整额放行）。"""
+    """窗口内已用 20 / 预算 25 → 引擎上限换算（缺陷 2 双层计量）。
+
+    跨日场景（引擎当日计数为 0）：上限即剩余额度 5。"""
     with TestSession() as db:
         for i in range(20):
             add_event(db, "xhs", "search", fresh() - timedelta(hours=1), keyword=f"k{i}")
-    job, run, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})])
+    job, run, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})], engine_used=0)
     assert calls[0]["session_budget"] == 5
     assert run["outcome"] == "clean"
+
+
+def test_engine_budget_limit_compensates_engine_prior_count(monkeypatch):
+    """同日场景（缺陷 1 回归）：DB 已用 20 + 引擎当日已计 20 + 限额 25
+    → 引擎收到上限 25 = 引擎当日已计 20 + 允许新增 5，剩余额度不被重复扣减。"""
+    with TestSession() as db:
+        for i in range(20):
+            add_event(db, "xhs", "search", fresh() - timedelta(hours=1), keyword=f"k{i}")
+    _, _, calls = run_job(monkeypatch, [("job_done", {"fetched_new": 0})], engine_used=20)
+    assert calls[0]["session_budget"] == 25
 
 
 # ---------- 详情连续失败提前收工 ----------

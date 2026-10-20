@@ -4,6 +4,7 @@
 import itertools
 import threading
 import time
+from concurrent.futures import Future
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -112,15 +113,32 @@ def test_disabled_job_skipped():
     assert FakeStage.calls == []
 
 
-def test_cooldown_due_recovers_to_active():
+def test_cooldown_due_recovers_and_runs_when_window_due():
+    """缺陷 4：冷却恢复保留 streak 结局时算好的 next_run_at（冷却结束后的第一个窗口），
+    不重新叠加 interval；保留值已到期时本 tick 直接执行。"""
+    window = NOW - timedelta(minutes=30)  # 冷却结束后的 08:30 窗口已到
     with TestSession() as db:
-        job = make_job(db, state="cooldown", cooldown_until=NOW - timedelta(minutes=1), streaks=1)
-    # 恢复只翻状态并排到下一个窗口，本 tick 不立即执行
+        job = make_job(db, state="cooldown", cooldown_until=NOW - timedelta(minutes=40),
+                       next_run_at=window, streaks=1)
+    assert make_scheduler().tick(now=NOW) == [job.id]
+    assert FakeStage.calls == [job.name]  # 恢复当 tick 即到期执行
+    fresh = fetch_job(job.id)
+    assert fresh.state == "active"
+    assert fresh.cooldown_until is None
+    assert fresh.last_run_at is not None
+
+
+def test_cooldown_due_keeps_future_window_untouched():
+    """缺陷 4：保留的 next_run_at 未到 → 只翻状态，不重排不多等。"""
+    window = NOW + timedelta(hours=5)
+    with TestSession() as db:
+        job = make_job(db, state="cooldown", cooldown_until=NOW - timedelta(minutes=1),
+                       next_run_at=window, streaks=1)
     assert make_scheduler().tick(now=NOW) == []
     fresh = fetch_job(job.id)
     assert fresh.state == "active"
     assert fresh.cooldown_until is None
-    assert aware(fresh.next_run_at) > NOW
+    assert aware(fresh.next_run_at) == window  # 不重算、不叠加 interval
 
 
 def test_cooldown_not_due_untouched():
@@ -172,6 +190,52 @@ def test_no_reentry_while_running():
     scheduler._running.add(job.id)  # 模拟上一轮还在跑
     assert scheduler.tick(now=NOW) == []
     assert FakeStage.calls == []
+
+
+# ---------- 缺陷 3：排队中的作业被暂停后不得执行 ----------
+
+
+class ManualExecutor:
+    """手动执行器：submit 只入队不执行，由测试决定何时 drain（模拟提交与执行间的空窗）。"""
+
+    def __init__(self):
+        self.pending = []
+
+    def submit(self, fn, *args, **kwargs):
+        self.pending.append(lambda: fn(*args, **kwargs))
+        future: Future = Future()
+        return future
+
+    def run_all(self):
+        for fn in self.pending:
+            fn()
+        self.pending.clear()
+
+    def shutdown(self, wait: bool = True, cancel_futures: bool = False) -> None:
+        pass
+
+
+def test_paused_after_enqueue_is_skipped():
+    """tick 提交后、执行前暂停作业 → 出队时状态复查拦下：阶段不执行、无 run 记录。"""
+    executor = ManualExecutor()
+    scheduler = Scheduler(session_factory=TestSession, tick_seconds=1, executor=executor)
+    with TestSession() as db:
+        job = make_job(db)
+    assert scheduler.tick(now=NOW) == [job.id]  # 已提交入队
+
+    # 空窗期管理员暂停（模拟 admin pause API）
+    with TestSession() as db:
+        paused = db.query(PipelineJob).filter(PipelineJob.id == job.id).first()
+        paused.enabled = False
+        paused.state = "paused"
+        db.commit()
+
+    executor.run_all()
+    assert FakeStage.calls == []  # 阶段未执行
+    with TestSession() as db:
+        assert db.query(PipelineRun).filter(PipelineRun.job_id == job.id).count() == 0
+        fresh = db.query(PipelineJob).filter(PipelineJob.id == job.id).first()
+        assert fresh.state == "paused"  # 状态不被 _execute 改动
 
 
 # ---------- 缺陷 3：运行中 dashboard 可见（run 即时落库 + 事件逐条提交） ----------

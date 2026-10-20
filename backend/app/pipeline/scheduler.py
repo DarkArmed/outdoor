@@ -73,8 +73,14 @@ class Scheduler:
             for job in cooled:
                 job.state = "active"
                 job.cooldown_until = None
-                job.next_run_at = policies.next_for_policy(now, job.policy)
+                # 保留 streak 结局时已算好的 next_run_at（冷却结束后的第一个窗口）——
+                # 重新套策略会再叠加一次 interval（如 24h），等于多等一个周期；
+                # 保留值 <= now 时本 tick 下面的到期查询会直接拾起执行
+                if job.next_run_at is None:
+                    job.next_run_at = policies.next_for_policy(now, job.policy)
                 logger.info("作业冷却结束恢复 active: %s", job.name)
+            # autoflush=False：恢复的状态变更先落进事务，下面的到期查询本 tick 就能拾起
+            db.flush()
 
             due = (
                 db.query(PipelineJob)
@@ -106,6 +112,12 @@ class Scheduler:
             with self._session_factory() as db:
                 job = db.query(PipelineJob).filter(PipelineJob.id == job_id).first()
                 if job is None:
+                    return
+                if not job.enabled or job.state != "active":
+                    # tick 提交后被暂停/禁用/转入冷却：跳过本轮，不建 PipelineRun。
+                    # next_run_at 已在 tick 时推走，跳过即保持；恢复后由 resume/trigger 语义接管
+                    logger.info("作业排队期间被暂停/禁用/冷却，跳过执行: %s (state=%s enabled=%s)",
+                                job.name, job.state, job.enabled)
                     return
                 run = PipelineRun(job_id=job.id)
                 db.add(run)

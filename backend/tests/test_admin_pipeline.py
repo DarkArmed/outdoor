@@ -321,7 +321,8 @@ def test_patch_updates_name_and_policy_without_reschedule(client, admin, db_sess
 
 def test_patch_reschedule_recomputes_next_run(client, admin, db_session):
     old_next = NOW + timedelta(hours=12)
-    job = make_job(db_session, next_run_at=old_next)
+    # 无 interval 的 policy：reschedule 保持 run_at 每日窗口语义（回归）
+    job = make_job(db_session, policy={"sources": ["xhs"], "run_at": "08:30"}, next_run_at=old_next)
     r = client.patch(
         f"{BASE}/jobs/{job.id}",
         json={"run_at": "07:00", "reschedule": True},
@@ -333,6 +334,20 @@ def test_patch_reschedule_recomputes_next_run(client, admin, db_session):
     assert aware(body["next_run_at"]) > datetime.now(timezone.utc)
     # 窗口按调度时区（默认 Asia/Shanghai）解释，不跟随系统时区
     assert aware(body["next_run_at"]).astimezone(ZoneInfo("Asia/Shanghai")).strftime("%H:%M") == "07:00"
+
+
+def test_patch_reschedule_respects_interval(client, admin, db_session):
+    """缺陷 2：reschedule 与 worker 共用策略——interval 作最小间隔（48h 不再被窗口提前）。"""
+    job = make_job(
+        db_session,
+        policy={"sources": ["xhs"], "run_at": "08:30", "interval": "48h"},
+        next_run_at=NOW,
+    )
+    before = datetime.now(timezone.utc)
+    r = client.patch(f"{BASE}/jobs/{job.id}", json={"reschedule": True}, headers=auth_headers(admin))
+    assert r.status_code == 200
+    delta = aware(r.json()["next_run_at"]) - before
+    assert timedelta(hours=47, minutes=59) < delta <= timedelta(hours=48, minutes=1)
 
 
 @pytest.mark.parametrize(
