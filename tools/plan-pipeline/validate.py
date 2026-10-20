@@ -43,7 +43,7 @@ def warn(plan_id, msg):
 
 
 def plan_strings(plan):
-    """方案中全部面向用户展示的字符串。"""
+    """方案中全部面向用户展示的字符串；walk 只收集字符串，数字 km 不会混入。"""
     out = []
 
     def walk(v):
@@ -56,7 +56,7 @@ def plan_strings(plan):
             for x in v:
                 walk(x)
 
-    for k in ('title', 'date', 'type', 'location', 'goal', 'tips', 'itinerary', 'dayNames', 'gear', 'safety', 'hike', 'review', 'badge', 'tasks'):
+    for k in ('title', 'date', 'type', 'location', 'drive', 'goal', 'tips', 'itinerary', 'dayNames', 'gear', 'safety', 'hike', 'review', 'badge', 'tasks'):
         walk(plan.get(k))
     return [s for s in out if s]
 
@@ -65,62 +65,141 @@ def norm(s):
     return re.sub(r'\s+', '', s)
 
 
+def nonempty_string(value):
+    return isinstance(value, str) and bool(value.strip())
+
+
+def check_string_list(pid, field, value, *, count=None, allow_empty=True):
+    if not isinstance(value, list):
+        err(pid, f'{field} 须为字符串数组')
+        return
+    if not allow_empty and not value:
+        err(pid, f'{field} 不能为空')
+    if count is not None and len(value) != count:
+        err(pid, f'{field} 须为 {count} 条')
+    for i, item in enumerate(value):
+        if not nonempty_string(item):
+            err(pid, f'{field}[{i}] 须为非空字符串')
+
+
 def check_contract(plan):
     pid = plan.get('id', '?')
     for f in REQUIRED:
         if f not in plan or plan[f] in (None, '', []):
             err(pid, f'缺必填字段或为空: {f}')
+    for f in ('id', 'title', 'date', 'type', 'theme', 'emoji', 'location', 'goal'):
+        if not nonempty_string(plan.get(f)):
+            err(pid, f'{f} 须为非空字符串')
     if not re.fullmatch(r'derived-[a-z0-9-]+', str(plan.get('id', ''))):
         err(pid, 'id 不符合 derived-<slug> 格式')
     if plan.get('archived') is not True:
         err(pid, 'archived 必须为 true（备用计划）')
-    if not re.match(r'^[ABCD]\s', str(plan.get('type', ''))):
-        err(pid, f'type 须以 A/B/C/D 开头: {plan.get("type")}')
-    if plan.get('theme') not in SCENES:
-        err(pid, f'theme 不在 SCENES 枚举: {plan.get("theme")}')
-    drive = plan.get('drive') or {}
-    if drive.get('from') != '家':
-        err(pid, 'drive.from 必须为「家」')
-    for f in ('to', 'time'):
-        if not drive.get(f):
-            err(pid, f'drive.{f} 为空')
-    if not isinstance(drive.get('km'), (int, float)):
-        err(pid, 'drive.km 须为数字')
-    tasks = plan.get('tasks') or []
-    if len(tasks) != 3:
-        err(pid, f'tasks 须为 3 条: {len(tasks)}')
-    review = plan.get('review') or []
-    if len(review) != 4:
-        err(pid, f'review 须为 4 条: {len(review)}')
-    badge = plan.get('badge') or {}
-    if not badge.get('icon') or not badge.get('name'):
-        err(pid, 'badge 缺 icon/name')
-    it = plan.get('itinerary') or []
-    multi = it and isinstance(it[0], list)
-    if multi:
-        day_names = plan.get('dayNames') or []
-        if len(day_names) != len(it):
-            err(pid, f'多日行程 dayNames({len(day_names)}) 与 itinerary({len(it)}) 天数不一致')
-        flat = [x for day in it for x in day]
+    if 'mom' in plan and not isinstance(plan['mom'], bool):
+        err(pid, 'mom 须为布尔值')
+    plan_type = plan.get('type')
+    if isinstance(plan_type, str) and not re.match(r'^[ABCD]\s', plan_type):
+        err(pid, f'type 须以 A/B/C/D 开头: {plan_type}')
+    theme = plan.get('theme')
+    if isinstance(theme, str) and theme not in SCENES:
+        err(pid, f'theme 不在 SCENES 枚举: {theme}')
+
+    drive = plan.get('drive')
+    if not isinstance(drive, dict):
+        err(pid, 'drive 须为对象')
     else:
+        for f in ('from', 'to', 'time'):
+            if not nonempty_string(drive.get(f)):
+                err(pid, f'drive.{f} 须为非空字符串')
+        if drive.get('from') != '家':
+            err(pid, 'drive.from 必须为「家」')
+        km = drive.get('km')
+        if isinstance(km, bool) or not isinstance(km, (int, float)):
+            err(pid, 'drive.km 须为数字')
+        if 'landmarks' in drive:
+            check_string_list(pid, 'drive.landmarks', drive['landmarks'])
+        if 'geoCity' in drive and not nonempty_string(drive['geoCity']):
+            err(pid, 'drive.geoCity 须为非空字符串')
+
+    check_string_list(pid, 'tasks', plan.get('tasks'), count=3, allow_empty=False)
+    check_string_list(pid, 'review', plan.get('review'), count=4, allow_empty=False)
+    check_string_list(pid, 'safety', plan.get('safety'), allow_empty=False)
+    if 'tips' in plan:
+        check_string_list(pid, 'tips', plan['tips'])
+
+    badge = plan.get('badge')
+    if not isinstance(badge, dict):
+        err(pid, 'badge 须为对象')
+    else:
+        for f in ('icon', 'name'):
+            if not nonempty_string(badge.get(f)):
+                err(pid, f'badge.{f} 须为非空字符串')
+
+    it = plan.get('itinerary')
+    if not isinstance(it, list):
+        err(pid, 'itinerary 须为数组')
+        it = []
+    multi = any(isinstance(day, list) for day in it)
+    if multi:
+        if not all(isinstance(day, list) for day in it):
+            err(pid, 'itinerary 单日须为步骤数组，多日须为每天的数组，不能混用')
+        check_string_list(pid, 'dayNames', plan.get('dayNames'), allow_empty=False)
+        day_names = plan.get('dayNames')
+        if isinstance(day_names, list) and len(day_names) != len(it):
+            err(pid, f'多日行程 dayNames({len(day_names)}) 与 itinerary({len(it)}) 天数不一致')
+        flat = [step for day in it if isinstance(day, list) for step in day]
+    else:
+        if 'dayNames' in plan:
+            check_string_list(pid, 'dayNames', plan['dayNames'])
         flat = it
     for i, step in enumerate(flat):
-        if not isinstance(step, dict) or not step.get('time') or not step.get('text'):
-            err(pid, f'itinerary[{i}] 缺 time/text')
-    gear = plan.get('gear') or {}
-    if not gear.get('base') or not gear.get('special'):
-        err(pid, 'gear.base/special 不能为空')
+        if not isinstance(step, dict):
+            err(pid, f'itinerary[{i}] 须为对象')
+            continue
+        for f in ('time', 'text'):
+            if not nonempty_string(step.get(f)):
+                err(pid, f'itinerary[{i}].{f} 须为非空字符串')
+
+    gear = plan.get('gear')
+    if not isinstance(gear, dict):
+        err(pid, 'gear 须为对象')
+    else:
+        for f in ('base', 'special'):
+            check_string_list(pid, f'gear.{f}', gear.get(f), allow_empty=False)
+        for f, value in gear.items():
+            if f not in ('base', 'special'):
+                check_string_list(pid, f'gear.{f}', value)
+
     hike = plan.get('hike')
     if hike is not None:
-        if not hike.get('title') or not hike.get('length'):
-            err(pid, 'hike 缺 title/length')
-        for j, wp in enumerate(hike.get('waypoints') or []):
-            if not wp.get('name'):
-                err(pid, f'hike.waypoints[{j}] 缺 name')
-            if 'query' not in wp and 'at' not in wp:
-                err(pid, f'hike.waypoints[{j}] 缺定位（query 或 at）')
-            if 'at' in wp and not (0 <= wp['at'] <= 1):
-                err(pid, f'hike.waypoints[{j}].at 超出 0–1')
+        if not isinstance(hike, dict):
+            err(pid, 'hike 须为对象或 null')
+        else:
+            for f in ('title', 'length'):
+                if not nonempty_string(hike.get(f)):
+                    err(pid, f'hike.{f} 须为非空字符串')
+            waypoints = hike.get('waypoints')
+            if not isinstance(waypoints, list) or not waypoints:
+                err(pid, 'hike.waypoints 须为非空数组')
+            else:
+                for j, wp in enumerate(waypoints):
+                    if not isinstance(wp, dict):
+                        err(pid, f'hike.waypoints[{j}] 须为对象')
+                        continue
+                    if not nonempty_string(wp.get('name')):
+                        err(pid, f'hike.waypoints[{j}].name 须为非空字符串')
+                    if 'query' in wp and not nonempty_string(wp['query']):
+                        err(pid, f'hike.waypoints[{j}].query 须为非空字符串')
+                    if 'query' not in wp and 'at' not in wp:
+                        err(pid, f'hike.waypoints[{j}] 缺定位（query 或 at）')
+                    if 'at' in wp:
+                        at = wp['at']
+                        if isinstance(at, bool) or not isinstance(at, (int, float)):
+                            err(pid, f'hike.waypoints[{j}].at 须为数字')
+                        elif not 0 <= at <= 1:
+                            err(pid, f'hike.waypoints[{j}].at 超出 0–1')
+                    for f in ('icon', 'act'):
+                        if f in wp and not nonempty_string(wp[f]):
+                            err(pid, f'hike.waypoints[{j}].{f} 须为非空字符串')
 
 
 def check_compliance(plan, corpus_root, drafts):
