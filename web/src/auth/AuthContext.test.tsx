@@ -5,7 +5,7 @@ import * as api from '@/api/client'
 import type { UserOut } from '@/api/types'
 
 vi.mock('@/api/client', () => ({ login: vi.fn(), register: vi.fn(), fetchMe: vi.fn() }))
-const user: UserOut = { id: 1, email: 'demo@example.com', is_active: true, created_at: '2026-09-13' }
+const user: UserOut = { id: 1, email: 'demo@example.com', is_active: true, is_admin: false, created_at: '2026-09-13' }
 beforeEach(() => {
   localStorage.clear()
   vi.resetAllMocks()

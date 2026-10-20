@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -45,9 +46,12 @@ class Store:
                 continue  # 损坏行跳过，不中断采集
 
     def _write_index(self) -> None:
+        # tmp + replace 原子写：写一半崩溃不会留下半截 index.jsonl
         self.root.mkdir(parents=True, exist_ok=True)
         lines = [json.dumps(rec, ensure_ascii=False) for rec in self._index.values()]
-        self.index_path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+        tmp = self.index_path.with_suffix(".jsonl.tmp")
+        tmp.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
+        os.replace(tmp, self.index_path)
 
     def has(self, source: str, id: str) -> bool:
         return (source, str(id)) in self._index

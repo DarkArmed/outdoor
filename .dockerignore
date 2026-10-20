@@ -1,6 +1,7 @@
 # Build input allowlist. Private data/configuration never enters the context.
 **
 !Dockerfile
+!Dockerfile.worker
 !backend/
 !backend/requirements.txt
 !backend/alembic.ini
@@ -16,6 +17,10 @@
 !web/vite.config.ts
 !web/src/
 !web/src/**
+# worker 镜像（Dockerfile.worker）需要的采集引擎源码；语料与 cookie 是运行时挂载，不进 context
+!tools/
+!tools/guide-pipeline/
+!tools/guide-pipeline/**
 **/__pycache__/
 **/*.pyc
 **/.env*
@@ -24,3 +29,8 @@
 **/*.test.*
 **/__fixtures__/
 web/src/test/
+# 本地配置与凭据永不进镜像（config.json 缺省时引擎回退 config.example.json）
+tools/guide-pipeline/.cookies/
+tools/guide-pipeline/config.json
+tools/guide-pipeline/.venv/
+tools/guide-pipeline/tests/

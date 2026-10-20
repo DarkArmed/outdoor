@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     wechat_miniapp_appid: str = ""
     wechat_miniapp_secret: str = ""
 
+    # 流水线 worker（python -m app.pipeline.worker，独立进程）
+    pipeline_tick_seconds: int = 30
+    pipeline_tools_dir: str = ""  # 缺省自动定位仓库根 tools/guide-pipeline
+    pipeline_corpus_root: str = ""  # 非空时作为 GUIDE_PIPELINE_CORPUS_ROOT 传给采集引擎
+    # run_at 窗口按此时区解释（容器系统时区是 UTC，不能跟随系统）
+    pipeline_timezone: str = "Asia/Shanghai"
+
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"

@@ -1,0 +1,25 @@
+# 数据流水线 worker 镜像（ADR-008 决策 3）：独立于 app 镜像。
+# Playwright 官方 Python 基础镜像自带 Chromium 与系统依赖（PLAYWRIGHT_BROWSERS_PATH=/ms-playwright）；
+# tag 固定为具体版本（满足 tools/guide-pipeline/requirements.txt 的 playwright>=1.40），不用 latest。
+# 注意：该镜像不预装 playwright 的 pip 包，而 requirements 是 >=1.40 开放下限——直接装会拿到
+# 最新版，其驱动与镜像自带的 1.55 浏览器构建（chromium-1187）不匹配。这里显式 pin 到镜像
+# 版本，保证 Python 包与 /ms-playwright 里的浏览器锁死（升级基础镜像 tag 时同步改这里）。
+FROM mcr.microsoft.com/playwright/python:v1.55.0-noble
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
+    PIPELINE_TOOLS_DIR=/app/tools/guide-pipeline \
+    PIPELINE_CORPUS_ROOT=/app/corpus
+WORKDIR /app/backend
+COPY backend/requirements.txt ./
+COPY tools/guide-pipeline/requirements.txt /tmp/guide-pipeline-requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -r /tmp/guide-pipeline-requirements.txt \
+    "playwright==1.55.0" \
+    && rm /tmp/guide-pipeline-requirements.txt
+COPY backend/app ./app
+COPY backend/alembic ./alembic
+COPY backend/alembic.ini ./
+COPY tools/guide-pipeline /app/tools/guide-pipeline
+# 语料挂载点先建好并交给 pwuser，空卷/新目录挂载时容器内可写
+RUN mkdir -p /app/corpus && chown -R pwuser:pwuser /app/corpus
+# playwright 镜像自带非 root 用户 pwuser（UID 1000）
+USER pwuser
+CMD ["python", "-m", "app.pipeline.worker"]

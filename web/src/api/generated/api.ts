@@ -350,6 +350,125 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/pipeline/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Overview */
+        get: operations["overview_api_admin_pipeline_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_api_admin_pipeline_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Events */
+        get: operations["list_events_api_admin_pipeline_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/jobs/{job_id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Job */
+        post: operations["pause_job_api_admin_pipeline_jobs__job_id__pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/jobs/{job_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Job */
+        post: operations["resume_job_api_admin_pipeline_jobs__job_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/jobs/{job_id}/trigger": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trigger Job */
+        post: operations["trigger_job_api_admin_pipeline_jobs__job_id__trigger_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/pipeline/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Job */
+        patch: operations["update_job_api_admin_pipeline_jobs__job_id__patch"];
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -510,6 +629,111 @@ export interface components {
             bbox: number[];
             /** Ways */
             ways: Record<string, unknown>[];
+        };
+        /** PipelineEventOut */
+        PipelineEventOut: {
+            /** Id */
+            id: number;
+            /**
+             * Ts
+             * Format: date-time
+             */
+            ts: string;
+            /** Job Id */
+            job_id: number | null;
+            /** Run Id */
+            run_id: number | null;
+            /** Source */
+            source: string | null;
+            /** Event */
+            event: string;
+            /** Payload */
+            payload: Record<string, unknown> | null;
+        };
+        /** PipelineJobOut */
+        PipelineJobOut: {
+            /** Id */
+            id: number;
+            /** Type */
+            type: string;
+            /** Name */
+            name: string;
+            /** State */
+            state: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Next Run At */
+            next_run_at: string | null;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Consecutive Streaks */
+            consecutive_streaks: number;
+            /** Cooldown Until */
+            cooldown_until: string | null;
+            /** Policy */
+            policy: Record<string, unknown>;
+        };
+        /** PipelineJobUpdate */
+        PipelineJobUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Session Budget */
+            session_budget?: number | null;
+            /** Run At */
+            run_at?: string | null;
+            /** Interval */
+            interval?: string | null;
+            /**
+             * Reschedule
+             * @default false
+             */
+            reschedule: boolean;
+        };
+        /** PipelineOverviewOut */
+        PipelineOverviewOut: {
+            /** Jobs */
+            jobs: components["schemas"]["PipelineJobOut"][];
+            /** Budgets */
+            budgets: components["schemas"]["PipelineSourceBudgetOut"][];
+            /** Cooldown Sources */
+            cooldown_sources: string[];
+        };
+        /** PipelineRunOut */
+        PipelineRunOut: {
+            /** Id */
+            id: number;
+            /** Job Id */
+            job_id: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Finished At */
+            finished_at: string | null;
+            /** Outcome */
+            outcome: string | null;
+            /** Requests */
+            requests: number;
+            /** Saved */
+            saved: number;
+            /** Detail Failures */
+            detail_failures: number;
+            /** Error */
+            error: string | null;
+        };
+        /** PipelineSourceBudgetOut */
+        PipelineSourceBudgetOut: {
+            /** Source */
+            source: string;
+            /** Used 24H */
+            used_24h: number;
+            /** Limit */
+            limit: number | null;
+            /** Limit Source */
+            limit_source: string;
+            /** In Cooldown */
+            in_cooldown: boolean;
         };
         /** PlanOut */
         PlanOut: {
@@ -715,6 +939,8 @@ export interface components {
             email: string;
             /** Is Active */
             is_active: boolean;
+            /** Is Admin */
+            is_admin: boolean;
             /**
              * Created At
              * Format: date-time
@@ -1524,6 +1750,221 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BadgeUnlockOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    overview_api_admin_pipeline_overview_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineOverviewOut"];
+                };
+            };
+        };
+    };
+    list_runs_api_admin_pipeline_runs_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                job_id?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineRunOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_events_api_admin_pipeline_events_get: {
+        parameters: {
+            query?: {
+                skip?: number;
+                limit?: number;
+                source?: string | null;
+                event?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineEventOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_job_api_admin_pipeline_jobs__job_id__pause_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_job_api_admin_pipeline_jobs__job_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trigger_job_api_admin_pipeline_jobs__job_id__trigger_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_job_api_admin_pipeline_jobs__job_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PipelineJobUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PipelineJobOut"];
                 };
             };
             /** @description Validation Error */

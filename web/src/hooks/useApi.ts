@@ -49,3 +49,15 @@ export function useTaskStates(id?: number) {
   const { user } = useAuth()
   return useSWR(user && id ? ['/tasks', user.id, id] : null, () => api.fetchTaskStates(id!))
 }
+export function usePipelineOverview() {
+  const { user } = useAuth()
+  return useSWR(user?.is_admin ? '/admin/pipeline/overview' : null, api.fetchPipelineOverview, { refreshInterval: 15000 })
+}
+export function usePipelineRuns(limit = 20) {
+  const { user } = useAuth()
+  return useSWR(user?.is_admin ? ['/admin/pipeline/runs', limit] : null, () => api.fetchPipelineRuns({ limit }))
+}
+export function usePipelineEvents(limit: number) {
+  const { user } = useAuth()
+  return useSWR(user?.is_admin ? ['/admin/pipeline/events', limit] : null, () => api.fetchPipelineEvents({ limit }))
+}

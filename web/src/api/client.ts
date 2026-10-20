@@ -3,6 +3,7 @@ import type {
   UserRegister, UserOut, Token, ProfileOut, ProfileUpdate, PlanOut,
   TripOut, TripDetailOut, TripCreate, TripUpdate, RouteOut, NetworkOut,
   MilestoneOut, GearItemState, TaskItemState, CheckinOut, BadgeUnlockOut,
+  PipelineJobOut, PipelineJobUpdate, PipelineRunOut, PipelineEventOut, PipelineOverviewOut,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -160,4 +161,32 @@ export interface LegacyPayload {
 }
 export async function importLegacy(payload: LegacyPayload) {
   return (await apiClient.post<{ import_id: string; trip_ids: number[] }>('/legacy/import', payload)).data
+}
+
+export async function fetchPipelineOverview() {
+  return (await apiClient.get<PipelineOverviewOut>('/admin/pipeline/overview')).data
+}
+
+export async function fetchPipelineRuns(params?: { skip?: number; limit?: number; job_id?: number }) {
+  return (await apiClient.get<PipelineRunOut[]>('/admin/pipeline/runs', { params })).data
+}
+
+export async function fetchPipelineEvents(params?: { skip?: number; limit?: number; source?: string; event?: string }) {
+  return (await apiClient.get<PipelineEventOut[]>('/admin/pipeline/events', { params })).data
+}
+
+export async function pausePipelineJob(id: number) {
+  return (await apiClient.post<PipelineJobOut>(`/admin/pipeline/jobs/${id}/pause`)).data
+}
+
+export async function resumePipelineJob(id: number) {
+  return (await apiClient.post<PipelineJobOut>(`/admin/pipeline/jobs/${id}/resume`)).data
+}
+
+export async function triggerPipelineJob(id: number) {
+  return (await apiClient.post<PipelineJobOut>(`/admin/pipeline/jobs/${id}/trigger`)).data
+}
+
+export async function updatePipelineJob(id: number, data: PipelineJobUpdate) {
+  return (await apiClient.patch<PipelineJobOut>(`/admin/pipeline/jobs/${id}`, data)).data
 }

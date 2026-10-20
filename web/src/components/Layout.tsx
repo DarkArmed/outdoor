@@ -29,6 +29,14 @@ export function Layout() {
               >
                 画像
               </Link>
+              {user.is_admin && (
+                <Link
+                  to="/admin"
+                  className="bg-card px-4 py-2 rounded-full font-bold shadow-sm"
+                >
+                  后台
+                </Link>
+              )}
               <button
                 onClick={logout}
                 className="bg-card px-4 py-2 rounded-full font-bold shadow-sm"
