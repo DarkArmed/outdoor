@@ -22,6 +22,7 @@ function loadDataScripts() {
     'data-b.js',
     'data-c.js',
     'data-d.js',
+    'data-e.js',
     'routes.js',
     'network.js',
   ];
